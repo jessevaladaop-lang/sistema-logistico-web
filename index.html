@@ -58,7 +58,7 @@ def gerenciar_menu_visual(categoria, lista_padrao):
             query_supabase("POST", "opcoes_custom", dados={"categoria": categoria, "valor": p})
         dados = query_supabase("GET", "opcoes_custom", params={"categoria": f"eq.{categoria}"})
     
-    opcoes = [item['valor'] for item in dados]
+    opcoes = sorted([item['valor'] for item in dados])
     
     st.markdown(f"**⚙️ {categoria.upper()}**")
     col1, col2 = st.columns([3, 1])
@@ -71,19 +71,19 @@ def gerenciar_menu_visual(categoria, lista_padrao):
     return opcoes
 `,
 
-          // --- MÓDULO: PEDIDOS (SISTEMA A-Q) ---
+          // --- MÓDULO: PEDIDOS (SISTEMA COMPLETO A-Q) ---
           "pedidos.py": `
 import streamlit as st
 import pandas as pd
-from datetime import date, datetime
+from datetime import date
 from database import query_supabase
 from menus import gerenciar_menu_visual
 
 def exibir_pedidos():
-    st.title("📋 GESTÃO DE PEDIDOS (A-Q)")
+    st.title("📋 GESTÃO DE PEDIDOS (A-Q) - NUVEM")
 
     # 1. Carregamento de Menus Dinâmicos
-    with st.expander("🛠️ GERENCIAR MENUS SUSPENSOS"):
+    with st.expander("🛠️ GERENCIAR MENUS SUSPENSOS (Adicionar/Excluir Opções)"):
         c_status = gerenciar_menu_visual("status", ["GAS", "CONF", "IMPR", "CANC"])
         c_baixado = gerenciar_menu_visual("baixado_por", ["IZA", "BEA", "GAB"])
         c_sit_nf = gerenciar_menu_visual("situacao_nf", ["EMIT", "P0", "DIGI"])
@@ -93,60 +93,69 @@ def exibir_pedidos():
         c_conferente = gerenciar_menu_visual("conferente", ["EDUARDO", "LUCAS"])
         c_expedicao = gerenciar_menu_visual("expedicao", ["EDUARDO", "LUCAS"])
 
-    # 2. Formulário Completo (17 Informações)
+    # 2. Formulário Completo Organizado por Seções (Conforme imagem desejada)
     with st.expander("➕ LANÇAR NOVO PEDIDO", expanded=True):
         with st.form("form_global_aq", clear_on_submit=True):
-            st.markdown("#### 🔹 Cadastro Base (A-D)")
+            
+            st.markdown("### ◆ Informações de Cadastro (A-D)")
             col1, col2, col3, col4 = st.columns(4)
             p_st = col1.selectbox("Status", [""] + c_status)
             p_bx = col2.selectbox("Baixado por", [""] + c_baixado)
             p_ped = col3.text_input("Nº Pedido")
             p_dt = col4.date_input("Data", value=date.today())
 
-            st.markdown("#### 🔹 Logística e Fiscal (E-K)")
+            st.markdown("### ◆ Detalhes Cliente e Transporte (E-H)")
             col5, col6, col7, col8 = st.columns(4)
             p_cli = col5.text_input("Cliente")
             p_tra = col6.text_input("Transportadora")
-            p_snf = col7.selectbox("Situação NF", [""] + c_sit_nf)
+            p_snf = col7.selectbox("Situação da NF", [""] + c_sit_nf)
             p_nnf = col8.text_input("Nº Nota Fiscal")
 
+            st.markdown("### ◆ Dados Fiscais e Coleta (I-K)")
             col9, col10, col11 = st.columns(3)
             p_cnj = col9.selectbox("CNPJ NF", [""] + c_cnpj)
             p_emi = col10.selectbox("Emissão NF", [""] + c_emissao)
             p_col = col11.text_input("Nº Coleta")
 
-            st.markdown("#### 🔹 Depósito e Finalização (L-Q)")
+            st.markdown("### ◆ Depósito: Separação e Conferência (L-O)")
             col12, col13, col14, col15 = st.columns(4)
             p_sep = col12.selectbox("Separador", [""] + c_separador)
-            p_dts = col13.date_input("Data Sep.", value=date.today())
+            p_dts = col13.date_input("Data da Separação", value=date.today())
             p_conf = col14.selectbox("Conferente", [""] + c_conferente)
-            p_dtc = col15.date_input("Data Conf.", value=date.today())
+            p_dtc = col15.date_input("Data da conferência", value=date.today())
 
+            st.markdown("### ◆ Finalização e Expedição (P-Q)")
             col16, col17 = st.columns(2)
             p_exp = col16.selectbox("Expedição", [""] + c_expedicao)
-            p_dte = col17.date_input("Data Exp.", value=date.today())
+            p_dte = col17.date_input("Data da Expedição", value=date.today())
 
-            if st.form_submit_button("💾 SALVAR REGISTRO COMPLETO"):
+            if st.form_submit_button("💾 SALVAR REGISTRO COMPLETO (A-Q)"):
                 if not p_ped or not p_cli:
-                    st.error("Campos Nº Pedido e Cliente são obrigatórios!")
+                    st.warning("Obrigatório preencher Nº Pedido e Cliente.")
                 else:
                     novo_ped = {
-                        "status": p_st, "baixado_por": p_bx, "pedido": p_ped, "data": p_dt.strftime("%d/%m/%Y"),
-                        "cliente": p_cli, "transportadora": p_tra, "situacao_nf": p_snf, "n_nf": p_nnf,
-                        "cnpj_nf": p_cnj, "emissao_nf": p_emi, "n_coleta": p_col, "separador": p_sep,
-                        "data_separacao": p_dts.strftime("%d/%m/%Y"), "conferente": p_conf,
-                        "data_conferencia": p_dtc.strftime("%d/%m/%Y"), "expedicao": p_exp,
-                        "data_expedicao": p_dte.strftime("%d/%m/%Y")
+                        "status": p_st, "baixado_por": p_bx, "pedido": p_ped, 
+                        "data": p_dt.strftime("%Y/%m/%d"), "cliente": p_cli,
+                        "transportadora": p_tra, "situacao_nf": p_snf, "n_nf": p_nnf,
+                        "cnpj_nf": p_cnj, "emissao_nf": p_emi, "n_coleta": p_col, 
+                        "separador": p_sep, "data_separacao": p_dts.strftime("%Y/%m/%d"),
+                        "conferente": p_conf, "data_conferencia": p_dtc.strftime("%Y/%m/%d"),
+                        "expedicao": p_exp, "data_expedicao": p_dte.strftime("%Y/%m/%d")
                     }
                     query_supabase("POST", "controle_pedidos", dados=novo_ped)
-                    st.success("Pedido gravado com sucesso!")
+                    st.success("Pedido registrado com sucesso na nuvem!")
                     st.rerun()
 
-    # 3. Tabela de Dados
-    st.subheader("📊 Base de Dados")
+    # 3. Visualização da Tabela Geral
+    st.subheader("📋 Banco de Dados Geral (Todas as Movimentações)")
     res = query_supabase("GET", "controle_pedidos", params={"order": "id.desc"})
     if res:
         df = pd.DataFrame(res)
+        cols_order = ["id", "status", "baixado_por", "pedido", "data", "cliente", 
+                      "transportadora", "situacao_nf", "n_nf", "cnpj_nf", "emissao_nf", 
+                      "n_coleta", "separador", "data_separacao", "conferente", 
+                      "data_conferencia", "expedicao", "data_expedicao"]
+        df = df[[c for c in cols_order if c in df.columns]]
         st.data_editor(df, use_container_width=True, hide_index=True)
 `,
 
@@ -156,11 +165,11 @@ from pedidos import exibir_pedidos
 
 st.set_page_config(page_title="KAIROS | Logística", layout="wide")
 st.sidebar.title("KAIROS 📦")
-aba = st.sidebar.radio("Navegação", ["Início", "Pedidos"])
+aba = st.sidebar.radio("Navegação", ["Dashboard", "Pedidos"])
 
-if aba == "Início":
-    st.title("Sistema KAIROS")
-    st.info("Selecione 'Pedidos' no menu lateral para acessar o painel A-Q.")
+if aba == "Dashboard":
+    st.title("Painel Geral")
+    st.info("Conectado ao Supabase!")
 else:
     exibir_pedidos()
 `
