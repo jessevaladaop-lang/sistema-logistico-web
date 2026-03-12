@@ -2,12 +2,11 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KAIROS | Logística Operacional</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.63.1/build/stlite.css" />
     <style>
-        /* Estética Minimalista e Profissional */
-        body { background-color: #0f172a; color: white; margin: 0; }
-        #root { min-height: 100vh; }
+        body { background-color: #0f172a; margin: 0; }
     </style>
 </head>
 <body>
@@ -15,21 +14,31 @@
     <script src="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.63.1/build/stlite.js"></script>
     <script>
       stlite.mount({
-        requirements: ["pandas", "requests"], // Adicione as bibliotecas do seu Python aqui
-        entrypoint: "app.py",
+        requirements: ["pandas", "requests", "openai"], // Bibliotecas do seu requirements.txt
+        entrypoint: "main.py",
         files: {
-          "app.py": `
+          // --- ARQUIVO DATABASE ---
+          "database.py": `
+# COLE O CONTEÚDO DO SEU database.py AQUI
+`,
+
+          // --- ARQUIVO PEDIDOS ---
+          "pedidos.py": `
+# COLE O CONTEÚDO DO SEU pedidos.py AQUI
+`,
+
+          // --- ARQUIVO PRINCIPAL ---
+          "main.py": `
 import streamlit as st
 import pandas as pd
+from database import * # Isso importa sua lógica do database.py acima
 
 st.set_page_config(page_title="Painel Logístico", layout="wide")
+st.title("📦 Sistema Operacional Logístico")
 
-st.markdown("# 📦 Sistema Operacional Logístico")
-st.sidebar.title("Navegação")
-
-# Aqui entra a lógica do seu sistema que já funciona no Python
-st.info("Sistema iniciado com sucesso no GitHub Pages.")
-          `,
+# Seu código do main.py continua aqui...
+st.success("Sistema modular carregado com sucesso!")
+`,
         },
       }, document.getElementById("root"));
     </script>
