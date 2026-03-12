@@ -29,8 +29,8 @@ def conectar_db():
     return create_client(URL, KEY)
 
 def get_opcoes(categoria, padrao):
-    supabase = conectar_db()
     try:
+        supabase = conectar_db()
         response = supabase.table("opcoes_custom").select("valor").eq("categoria", categoria).execute()
         customs = [row['valor'] for row in response.data]
         return padrao + customs + ["+ ADICIONAR NOVO"]
@@ -38,8 +38,8 @@ def get_opcoes(categoria, padrao):
         return padrao + ["+ ADICIONAR NOVO"]
 
 def carregar_pedidos():
-    supabase = conectar_db()
     try:
+        supabase = conectar_db()
         response = supabase.table("controle_pedidos").select("*").execute()
         return pd.DataFrame(response.data)
     except:
@@ -64,15 +64,19 @@ def exibir_pedidos():
             p_cli = st.text_input("Cliente")
             p_transp = st.text_input("Transportadora")
             if st.form_submit_button("Salvar"):
-                salvar_pedido({"pedido": p_num, "cliente": p_cli, "transportadora": p_transp})
-                st.success("Pedido salvo!")
-                st.rerun()
+                if p_num and p_cli:
+                    salvar_pedido({"pedido": p_num, "cliente": p_cli, "transportadora": p_transp})
+                    st.success("Pedido salvo com sucesso!")
+                    st.rerun()
+                else:
+                    st.error("Preencha o número do pedido e o cliente.")
 
+    st.subheader("Lista de Pedidos")
     df = carregar_pedidos()
     if not df.empty:
         st.dataframe(df, use_container_width=True)
     else:
-        st.info("Nenhum pedido encontrado ou erro na tabela.")
+        st.info("Nenhum pedido encontrado no banco de dados.")
 `,
 
           "main.py": `
@@ -87,6 +91,7 @@ aba = st.sidebar.radio("Navegação", ["Dashboard", "Pedidos"])
 if aba == "Dashboard":
     st.title("📊 Painel Geral")
     st.success("Conectado ao Supabase!")
+    st.write("Bem-vindo ao Sistema BW HTML.")
 else:
     exibir_pedidos()
 `
