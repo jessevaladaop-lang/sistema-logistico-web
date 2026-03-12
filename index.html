@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>KAIROS | Logística Operacional</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.63.1/build/stlite.css" />
+    <style>
+        /* Estética Minimalista e Profissional */
+        body { background-color: #0f172a; color: white; margin: 0; }
+        #root { min-height: 100vh; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script src="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.63.1/build/stlite.js"></script>
+    <script>
+      stlite.mount({
+        requirements: ["pandas", "requests"], // Adicione as bibliotecas do seu Python aqui
+        entrypoint: "app.py",
+        files: {
+          "app.py": `
+import streamlit as st
+import pandas as pd
+
+st.set_page_config(page_title="Painel Logístico", layout="wide")
+
+st.markdown("# 📦 Sistema Operacional Logístico")
+st.sidebar.title("Navegação")
+
+# Aqui entra a lógica do seu sistema que já funciona no Python
+st.info("Sistema iniciado com sucesso no GitHub Pages.")
+          `,
+        },
+      }, document.getElementById("root"));
+    </script>
+</body>
+</html>
