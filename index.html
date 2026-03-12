@@ -1,23 +1,32 @@
-stlite.mount({
-  // Trocamos 'supabase' por 'supabase-py' que é mais leve para o navegador
-  requirements: ["pandas", "requests", "openai", "supabase-py"], 
-  entrypoint: "main.py",
-  files: {
-    "database.py": `
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KAIROS | Logística Operacional</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.63.1/build/stlite.css" />
+    <style>
+        body { background-color: #0f172a; margin: 0; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script src="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.63.1/build/stlite.js"></script>
+    <script>
+      stlite.mount({
+        requirements: ["pandas", "requests", "openai", "supabase-py"],
+        entrypoint: "main.py",
+        files: {
+          "database.py": `
 import streamlit as st
 import pandas as pd
 from supabase import create_client, Client
 
 URL = "https://lnnidnxaxcpuutyyxowd.supabase.co"
-# ATENÇÃO: Deixe a KEY em uma linha só, sem espaços ou quebras
 KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxubmlkbnhheGNwdXV0eXl4b3dkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNzQ4MjIsImV4cCI6MjA4ODg1MDgyMn0.ysE7PQ6Ce_MtfWPtUWeUVmfNAkjKiFJqrK6kAyicB4g"
 
 def conectar_db():
     return create_client(URL, KEY)
-
-# ... resto das suas funções do database ...
-`,
-// ... resto dos arquivos ...
 
 def get_opcoes(categoria, padrao):
     supabase = conectar_db()
@@ -30,8 +39,11 @@ def get_opcoes(categoria, padrao):
 
 def carregar_pedidos():
     supabase = conectar_db()
-    response = supabase.table("controle_pedidos").select("*").execute()
-    return pd.DataFrame(response.data)
+    try:
+        response = supabase.table("controle_pedidos").select("*").execute()
+        return pd.DataFrame(response.data)
+    except:
+        return pd.DataFrame()
 
 def salvar_pedido(dados_dict):
     supabase = conectar_db()
@@ -57,7 +69,10 @@ def exibir_pedidos():
                 st.rerun()
 
     df = carregar_pedidos()
-    st.dataframe(df, use_container_width=True)
+    if not df.empty:
+        st.dataframe(df, use_container_width=True)
+    else:
+        st.info("Nenhum pedido encontrado ou erro na tabela.")
 `,
 
           "main.py": `
