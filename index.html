@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KAIROS | Teste de Sistema</title>
+    <title>KAIROS | Sistema Logístico</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.63.1/build/stlite.css" />
 </head>
 <body>
@@ -11,21 +11,30 @@
     <script src="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.63.1/build/stlite.js"></script>
     <script>
       stlite.mount({
-        // Removemos o supabase e openai temporariamente para limpar o erro
-        requirements: ["pandas"], 
+        // Deixamos vazio para o sistema carregar o básico instantaneamente
+        requirements: [], 
         entrypoint: "main.py",
         files: {
           "main.py": `
 import streamlit as st
-import pandas as pd
 
-st.title("📦 KAIROS | Teste de Diagnóstico")
-st.success("O ambiente Stlite carregou com sucesso!")
+st.set_page_config(page_title="KAIROS Logística", layout="wide")
 
-st.info("Se você está vendo esta mensagem, o erro anterior era causado pela biblioteca do Supabase.")
+st.title("📦 KAIROS | Sistema BW")
 
-st.subheader("Próximo Passo:")
-st.write("Agora que sabemos que o ambiente funciona, vou ajustar a forma como conectamos ao banco de dados sem usar a biblioteca problemática.")
+st.sidebar.success("Ambiente Conectado")
+
+aba = st.sidebar.radio("Navegação", ["Início", "Status do Banco"])
+
+if aba == "Início":
+    st.balloons()
+    st.header("🚀 Sistema Online!")
+    st.write("Se você está vendo esta tela, conseguimos vencer o erro de carregamento.")
+    st.info("O próximo passo agora é reintroduzir as funções do Supabase uma a uma.")
+
+elif aba == "Status do Banco":
+    st.subheader("Conexão Supabase")
+    st.warning("Aguardando configuração da API REST.")
 `
         },
       }, document.getElementById("root"));
