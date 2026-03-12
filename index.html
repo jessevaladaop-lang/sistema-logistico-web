@@ -37,8 +37,6 @@ def query_supabase(metodo, endpoint, dados=None, params=None):
             return res.json()
         elif metodo == "POST":
             return requests.post(url, headers=HEADERS, data=json.dumps(dados))
-        elif metodo == "PATCH":
-            return requests.patch(url, headers=HEADERS, data=json.dumps(dados), params=params)
         elif metodo == "DELETE":
             return requests.delete(url, headers=HEADERS, params=params)
     except Exception as e:
@@ -46,13 +44,16 @@ def query_supabase(metodo, endpoint, dados=None, params=None):
         return []
 `,
 
-          // --- MÓDULO: GERENCIADOR DE LISTAS ---
+          // --- MÓDULO: GERENCIADOR DE LISTAS (AGORA COM EXCLUSÃO) ---
           "menus.py": `
 import streamlit as st
 from database import query_supabase
 
 def gerenciar_menu_visual(categoria, lista_padrao):
+    # Busca dados atuais
     dados = query_supabase("GET", "opcoes_custom", params={"categoria": f"eq.{categoria}"})
+    
+    # Se estiver vazio, popula com o padrão
     if not dados:
         for p in lista_padrao:
             query_supabase("POST", "opcoes_custom", dados={"categoria": categoria, "valor": p})
@@ -60,18 +61,29 @@ def gerenciar_menu_visual(categoria, lista_padrao):
     
     opcoes = sorted([item['valor'] for item in dados])
     
-    st.markdown(f"**⚙️ {categoria.upper()}**")
-    col1, col2 = st.columns([3, 1])
-    novo = col1.text_input(f"Novo em {categoria}", key=f"in_{categoria}")
-    if col2.button("➕", key=f"bt_{categoria}"):
-        if novo and novo not in opcoes:
-            query_supabase("POST", "opcoes_custom", dados={"categoria": categoria, "valor": novo})
-            st.cache_data.clear()
-            st.rerun()
+    st.markdown(f"**⚙️ Configurar Lista: {categoria.upper()}**")
+    col_add, col_rem = st.columns(2)
+    
+    # Lógica de Adição
+    with col_add:
+        novo = st.text_input(f"Adicionar novo em {categoria}:", key=f"add_in_{categoria}")
+        if st.button(f"➕ Incluir", key=f"btn_add_{categoria}"):
+            if novo and novo not in opcoes:
+                query_supabase("POST", "opcoes_custom", dados={"categoria": categoria, "valor": novo})
+                st.rerun()
+
+    # Lógica de Remoção (Conforme sua imagem)
+    with col_rem:
+        para_remover = st.selectbox(f"Remover de {categoria}:", ["---"] + opcoes, key=f"sel_rem_{categoria}")
+        if st.button(f"🗑️ Excluir Opção", key=f"btn_rem_{categoria}"):
+            if para_remover != "---":
+                query_supabase("DELETE", "opcoes_custom", params={"categoria": f"eq.{categoria}", "valor": f"eq.{para_remover}"})
+                st.rerun()
+                
     return opcoes
 `,
 
-          // --- MÓDULO: PEDIDOS (SISTEMA COMPLETO A-Q) ---
+          // --- MÓDULO: PEDIDOS (COMPLETO A-Q) ---
           "pedidos.py": `
 import streamlit as st
 import pandas as pd
@@ -80,23 +92,28 @@ from database import query_supabase
 from menus import gerenciar_menu_visual
 
 def exibir_pedidos():
-    st.title("📋 GESTÃO DE PEDIDOS (A-Q) - NUVEM")
+    st.title("📋 GESTÃO DE PEDIDOS (A-Q)")
 
-    # 1. Carregamento de Menus Dinâmicos
     with st.expander("🛠️ GERENCIAR MENUS SUSPENSOS (Adicionar/Excluir Opções)"):
+        st.info("Configure as opções que aparecem nos campos de seleção.")
         c_status = gerenciar_menu_visual("status", ["GAS", "CONF", "IMPR", "CANC"])
+        st.divider()
         c_baixado = gerenciar_menu_visual("baixado_por", ["IZA", "BEA", "GAB"])
+        st.divider()
         c_sit_nf = gerenciar_menu_visual("situacao_nf", ["EMIT", "P0", "DIGI"])
+        st.divider()
         c_cnpj = gerenciar_menu_visual("cnpj_nf", ["JAD", "YO", "LOW", "BW", "SUK"])
+        st.divider()
         c_emissao = gerenciar_menu_visual("emissao_nf", ["IZA", "BEA"])
-        c_separador = gerenciar_menu_visual("separador", ["EDUARDO", "LUCAS", "JONATHAN"])
+        st.divider()
+        c_separador = gerenciar_menu_visual("separador", ["EDUARDO", "LUCAS"])
+        st.divider()
         c_conferente = gerenciar_menu_visual("conferente", ["EDUARDO", "LUCAS"])
+        st.divider()
         c_expedicao = gerenciar_menu_visual("expedicao", ["EDUARDO", "LUCAS"])
 
-    # 2. Formulário Completo Organizado por Seções (Conforme imagem desejada)
     with st.expander("➕ LANÇAR NOVO PEDIDO", expanded=True):
         with st.form("form_global_aq", clear_on_submit=True):
-            
             st.markdown("### ◆ Informações de Cadastro (A-D)")
             col1, col2, col3, col4 = st.columns(4)
             p_st = col1.selectbox("Status", [""] + c_status)
@@ -131,31 +148,24 @@ def exibir_pedidos():
 
             if st.form_submit_button("💾 SALVAR REGISTRO COMPLETO (A-Q)"):
                 if not p_ped or not p_cli:
-                    st.warning("Obrigatório preencher Nº Pedido e Cliente.")
+                    st.warning("Preencha Pedido e Cliente.")
                 else:
-                    novo_ped = {
-                        "status": p_st, "baixado_por": p_bx, "pedido": p_ped, 
-                        "data": p_dt.strftime("%Y/%m/%d"), "cliente": p_cli,
-                        "transportadora": p_tra, "situacao_nf": p_snf, "n_nf": p_nnf,
-                        "cnpj_nf": p_cnj, "emissao_nf": p_emi, "n_coleta": p_col, 
-                        "separador": p_sep, "data_separacao": p_dts.strftime("%Y/%m/%d"),
-                        "conferente": p_conf, "data_conferencia": p_dtc.strftime("%Y/%m/%d"),
-                        "expedicao": p_exp, "data_expedicao": p_dte.strftime("%Y/%m/%d")
+                    dados = {
+                        "status": p_st, "baixado_por": p_bx, "pedido": p_ped, "data": p_dt.strftime("%Y-%m-%d"),
+                        "cliente": p_cli, "transportadora": p_tra, "situacao_nf": p_snf, "n_nf": p_nnf,
+                        "cnpj_nf": p_cnj, "emissao_nf": p_emi, "n_coleta": p_col, "separador": p_sep,
+                        "data_separacao": p_dts.strftime("%Y-%m-%d"), "conferente": p_conf,
+                        "data_conferencia": p_dtc.strftime("%Y-%m-%d"), "expedicao": p_exp,
+                        "data_expedicao": p_dte.strftime("%Y-%m-%d")
                     }
-                    query_supabase("POST", "controle_pedidos", dados=novo_ped)
-                    st.success("Pedido registrado com sucesso na nuvem!")
+                    query_supabase("POST", "controle_pedidos", dados=dados)
+                    st.success("Salvo!")
                     st.rerun()
 
-    # 3. Visualização da Tabela Geral
-    st.subheader("📋 Banco de Dados Geral (Todas as Movimentações)")
     res = query_supabase("GET", "controle_pedidos", params={"order": "id.desc"})
     if res:
+        st.subheader("📋 Banco de Dados")
         df = pd.DataFrame(res)
-        cols_order = ["id", "status", "baixado_por", "pedido", "data", "cliente", 
-                      "transportadora", "situacao_nf", "n_nf", "cnpj_nf", "emissao_nf", 
-                      "n_coleta", "separador", "data_separacao", "conferente", 
-                      "data_conferencia", "expedicao", "data_expedicao"]
-        df = df[[c for c in cols_order if c in df.columns]]
         st.data_editor(df, use_container_width=True, hide_index=True)
 `,
 
@@ -163,13 +173,13 @@ def exibir_pedidos():
 import streamlit as st
 from pedidos import exibir_pedidos
 
-st.set_page_config(page_title="KAIROS | Logística", layout="wide")
+st.set_page_config(page_title="KAIROS", layout="wide")
 st.sidebar.title("KAIROS 📦")
 aba = st.sidebar.radio("Navegação", ["Dashboard", "Pedidos"])
 
 if aba == "Dashboard":
     st.title("Painel Geral")
-    st.info("Conectado ao Supabase!")
+    st.write("Sistema Online")
 else:
     exibir_pedidos()
 `
