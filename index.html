@@ -17,15 +17,13 @@
         requirements: ["pandas", "requests", "openai", "supabase"],
         entrypoint: "main.py",
         files: {
-          // --- ARQUIVO DATABASE ---
           "database.py": `
 import streamlit as st
+import pandas as pd
 from supabase import create_client, Client
 
-# Substitua com os dados que aparecerem em Settings -> API do seu Supabase
 URL = "https://lnnidnxaxcpuutyyxowd.supabase.co"
-KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxubmlkbnhheGNwdXV0eXl4b3dkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNzQ4MjIsImV4cCI6MjA4ODg1MDgyMn0.ysE7PQ6Ce_MtfWPtUWeUVmfNAkjKiFJqrK6kAyicB4g
-"
+KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxubmlkbnhheGNwdXV0eXl4b3dkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNzQ4MjIsImV4cCI6MjA4ODg1MDgyMn0.ysE7PQ6Ce_MtfWPtUWeUVmfNAkjKiFJqrK6kAyicB4g"
 
 def conectar_db():
     return create_client(URL, KEY)
@@ -39,40 +37,53 @@ def get_opcoes(categoria, padrao):
     except:
         return padrao + ["+ ADICIONAR NOVO"]
 
-def salvar_nova_opcao(categoria, valor):
-    if valor and valor != "+ ADICIONAR NOVO":
-        supabase = conectar_db()
-        supabase.table("opcoes_custom").insert({"categoria": categoria, "valor": valor}).execute()
-
-# Função para buscar todos os pedidos (Antigo pd.read_sql)
 def carregar_pedidos():
     supabase = conectar_db()
     response = supabase.table("controle_pedidos").select("*").execute()
     return pd.DataFrame(response.data)
 
-# Função para salvar pedidos
 def salvar_pedido(dados_dict):
     supabase = conectar_db()
-    supabase.table("controle_pedidos").insert(dados_dict).execute()
+    return supabase.table("controle_pedidos").insert(dados_dict).execute()
 `,
 
-          // --- ARQUIVO PEDIDOS ---
           "pedidos.py": `
-# COLE O CONTEÚDO DO SEU pedidos.py AQUI
-`,
-
-          // --- ARQUIVO PRINCIPAL ---
-          "main.py": `
 import streamlit as st
 import pandas as pd
-from database import * # Isso importa sua lógica do database.py acima
+from database import carregar_pedidos, salvar_pedido
+
+def exibir_pedidos():
+    st.header("📝 Gestão de Pedidos")
+    
+    with st.expander("Cadastrar Novo Pedido"):
+        with st.form("novo_pedido"):
+            p_num = st.text_input("Número do Pedido")
+            p_cli = st.text_input("Cliente")
+            p_transp = st.text_input("Transportadora")
+            if st.form_submit_button("Salvar"):
+                salvar_pedido({"pedido": p_num, "cliente": p_cli, "transportadora": p_transp})
+                st.success("Pedido salvo!")
+                st.rerun()
+
+    df = carregar_pedidos()
+    st.dataframe(df, use_container_width=True)
+`,
+
+          "main.py": `
+import streamlit as st
+from pedidos import exibir_pedidos
 
 st.set_page_config(page_title="Painel Logístico", layout="wide")
-st.title("📦 Sistema Operacional Logístico")
 
-# Seu código do main.py continua aqui...
-st.success("Sistema modular carregado com sucesso!")
-`,
+st.sidebar.title("KAIROS 📦")
+aba = st.sidebar.radio("Navegação", ["Dashboard", "Pedidos"])
+
+if aba == "Dashboard":
+    st.title("📊 Painel Geral")
+    st.success("Conectado ao Supabase!")
+else:
+    exibir_pedidos()
+`
         },
       }, document.getElementById("root"));
     </script>
