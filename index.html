@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KAIROS | Logística Operacional</title>
+    <title>KAIROS | Sistema Completo</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.63.1/build/stlite.css" />
     <style>body { background-color: #0f172a; margin: 0; }</style>
 </head>
@@ -18,6 +18,7 @@
           "database.py": `
 import requests
 import pandas as pd
+import json
 
 URL_BASE = "https://lnnidnxaxcpuutyyxowd.supabase.co/rest/v1"
 HEADERS = {
@@ -27,87 +28,126 @@ HEADERS = {
     "Prefer": "return=representation"
 }
 
-def carregar_dados(tabela):
+def query_supabase(metodo, endpoint, dados=None, params=None):
+    url = f"{URL_BASE}/{endpoint}"
     try:
-        response = requests.get(f"{URL_BASE}/{tabela}?select=*", headers=HEADERS)
-        return pd.DataFrame(response.json())
-    except:
-        return pd.DataFrame()
-
-def salvar_registro(tabela, dados):
-    return requests.post(f"{URL_BASE}/{tabela}", headers=HEADERS, json=dados)
+        if metodo == "GET":
+            res = requests.get(url, headers=HEADERS, params=params)
+            return res.json()
+        elif metodo == "POST":
+            return requests.post(url, headers=HEADERS, data=json.dumps(dados))
+        elif metodo == "PATCH":
+            return requests.patch(url, headers=HEADERS, data=json.dumps(dados), params=params)
+        elif metodo == "DELETE":
+            return requests.delete(url, headers=HEADERS, params=params)
+    except Exception as e:
+        return []
 `,
 
-          "atendimento.py": `
+          "menus.py": `
 import streamlit as st
-from database import salvar_registro, carregar_dados
-from datetime import datetime
+from database import query_supabase
 
-def exibir_atendimento():
-    st.header("🚛 Atendimento de Motoristas")
+def gerenciar_menu_visual(categoria, lista_padrao):
+    dados = query_supabase("GET", "opcoes_custom", params={"categoria": f"eq.{categoria}"})
+    if not dados:
+        for p in lista_padrao:
+            query_supabase("POST", "opcoes_custom", dados={"categoria": categoria, "valor": p})
+        dados = query_supabase("GET", "opcoes_custom", params={"categoria": f"eq.{categoria}"})
     
-    with st.form("form_atendimento"):
-        col1, col2 = st.columns(2)
-        cliente = col1.text_input("Cliente")
-        transp = col1.text_input("Transportadora")
-        publico = col2.selectbox("Público", ["Interno", "Externo"])
-        chegada = col2.text_input("Horário Chegada (HH:MM)")
-        
-        if st.form_submit_button("Registrar Entrada"):
-            dados = {
-                "cliente": cliente, 
-                "transp": transp, 
-                "publico": publico, 
-                "chegada": chegada,
-                "data_referencia": datetime.now().strftime("%d/%m/%Y")
-            }
-            salvar_registro("registros", dados)
-            st.success("Motorista registrado!")
-
-    st.subheader("Histórico de Hoje")
-    df = carregar_dados("registros")
-    if not df.empty:
-        st.dataframe(df, use_container_width=True)
+    opcoes = [item['valor'] for item in dados]
+    
+    st.markdown(f"**⚙️ {categoria.upper()}**")
+    col1, col2 = st.columns(2)
+    novo = col1.text_input(f"Novo em {categoria}", key=f"add_{categoria}")
+    if col1.button("➕", key=f"btn_add_{categoria}"):
+        if novo and novo not in opcoes:
+            query_supabase("POST", "opcoes_custom", dados={"categoria": categoria, "valor": novo})
+            st.rerun()
+            
+    remover = col2.selectbox(f"Remover", ["---"] + opcoes, key=f"del_{categoria}")
+    if col2.button("🗑️", key=f"btn_del_{categoria}"):
+        if remover != "---":
+            query_supabase("DELETE", "opcoes_custom", params={"categoria": f"eq.{categoria}", "valor": f"eq.{remover}"})
+            st.rerun()
+    return opcoes
 `,
 
           "pedidos.py": `
 import streamlit as st
-from database import carregar_dados, salvar_registro
+import pandas as pd
+from datetime import date
+from database import query_supabase
+from menus import gerenciar_menu_visual
 
 def exibir_pedidos():
-    st.header("📝 Gestão de Pedidos")
-    with st.expander("Cadastrar Novo Pedido"):
-        with st.form("novo_pedido"):
-            p_num = st.text_input("Número do Pedido")
-            p_cli = st.text_input("Cliente")
-            if st.form_submit_button("Salvar"):
-                salvar_registro("controle_pedidos", {"pedido": p_num, "cliente": p_cli})
-                st.success("Pedido Salvo!")
-                st.rerun()
-    
-    df = carregar_dados("controle_pedidos")
-    if not df.empty:
-        st.dataframe(df, use_container_width=True)
-`,
+    st.title("📋 GESTÃO DE PEDIDOS (A-Q)")
+
+    with st.expander("🛠️ GERENCIAR MENUS SUSPENSOS"):
+        c_status = gerenciar_menu_visual("status", ["GAS", "CONF", "IMPR", "CANC"])
+        c_baixado = gerenciar_menu_visual("baixado_por", ["IZA", "BEA", "GAB"])
+        c_sit_nf = gerenciar_menu_visual("situacao_nf", ["EMIT", "P0", "DIGI"])
+        c_cnpj = gerenciar_menu_visual("cnpj_nf", ["JAD", "YO", "BW"])
+        c_emissao = gerenciar_menu_visual("emissao_nf", ["IZA", "BEA"])
+        c_separador = gerenciar_menu_visual("separador", ["EDUARDO", "LUCAS"])
+        c_conferente = gerenciar_menu_visual("conferente", ["EDUARDO", "LUCAS"])
+        c_expedicao = gerenciar_menu_visual("expedicao", ["EDUARDO", "LUCAS"])
+
+    # --- FORMULÁRIO COMPLETO ---
+    with st.expander("➕ LANÇAR NOVO PEDIDO", expanded=True):
+        with st.form("form_aq", clear_on_submit=True):
+            st.markdown("### 🔹 Cadastro e Transporte")
+            col1, col2, col3, col4 = st.columns(4)
+            p_st = col1.selectbox("Status", [""] + c_status)
+            p_bx = col2.selectbox("Baixado", [""] + c_baixado)
+            p_ped = col3.text_input("Nº Pedido")
+            p_dt = col4.date_input("Data", value=date.today())
+
+            col5, col6, col7, col8 = st.columns(4)
+            p_cli = col5.text_input("Cliente")
+            p_tr = col6.text_input("Transportadora")
+            p_nf_s = col7.selectbox("Sit. NF", [""] + c_sit_nf)
+            p_nf_n = col8.text_input("Nº NF")
+
+            st.markdown("### 🔹 Separação e Expedição")
+            col9, col10, col11, col12 = st.columns(4)
+            p_sep = col9.selectbox("Separador", [""] + c_separador)
+            p_dt_s = col10.date_input("Data Sep.", value=date.today())
+            p_conf = col11.selectbox("Conferente", [""] + c_conferente)
+            p_dt_c = col12.date_input("Data Conf.", value=date.today())
+
+            if st.form_submit_button("💾 SALVAR REGISTRO COMPLETO"):
+                if p_ped and p_cli:
+                    novo = {
+                        "status": p_st, "baixado_por": p_bx, "pedido": p_ped,
+                        "data": p_dt.strftime("%d/%m/%Y"), "cliente": p_cli,
+                        "transportadora": p_tr, "situacao_nf": p_nf_s, "n_nf": p_nf_n,
+                        "separador": p_sep, "data_separacao": p_dt_s.strftime("%d/%m/%Y"),
+                        "conferente": p_conf, "data_conferencia": p_dt_c.strftime("%d/%m/%Y")
+                    }
+                    query_supabase("POST", "controle_pedidos", dados=novo)
+                    st.success("Pedido salvo!")
+                    st.rerun()
+
+    # --- TABELA ---
+    st.subheader("📋 Banco de Dados")
+    dados = query_supabase("GET", "controle_pedidos", params={"order": "id.desc"})
+    if dados:
+        df = pd.DataFrame(dados)
+        st.data_editor(df, use_container_width=True)
+` ,
 
           "main.py": `
 import streamlit as st
-from atendimento import exibir_atendimento
 from pedidos import exibir_pedidos
 
-st.set_page_config(page_title="KAIROS | Logística", layout="wide")
+st.set_page_config(page_title="KAIROS | Sistema BW", layout="wide")
 st.sidebar.title("KAIROS 📦")
-aba = st.sidebar.radio("Navegação", ["Dashboard", "Atendimento", "Pedidos"])
+aba = st.sidebar.radio("Navegação", ["Dashboard", "Pedidos"])
 
 if aba == "Dashboard":
-    st.title("📊 Indicadores Operacionais")
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Status", "Online")
-    col2.metric("Banco", "Conectado")
-    col3.metric("Versão", "2.0 (HTML)")
-    
-elif aba == "Atendimento":
-    exibir_atendimento()
+    st.title("📊 Dashboard Geral")
+    st.info("Sistema de Gestão Logística A-Q carregado com sucesso.")
 else:
     exibir_pedidos()
 `
