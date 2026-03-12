@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KAIROS | Sistema Completo</title>
+    <title>KAIROS | Arquitetura Modular</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.63.1/build/stlite.css" />
     <style>body { background-color: #0f172a; margin: 0; }</style>
 </head>
@@ -15,10 +15,12 @@
         requirements: ["pandas", "requests"],
         entrypoint: "main.py",
         files: {
+          // --- 1. CONEXÃO E NUVEM ---
           "database.py": `
 import requests
-import pandas as pd
 import json
+import pandas as pd
+import streamlit as st
 
 URL_BASE = "https://lnnidnxaxcpuutyyxowd.supabase.co/rest/v1"
 HEADERS = {
@@ -41,9 +43,11 @@ def query_supabase(metodo, endpoint, dados=None, params=None):
         elif metodo == "DELETE":
             return requests.delete(url, headers=HEADERS, params=params)
     except Exception as e:
+        st.error(f"Erro na conexão: {e}")
         return []
 `,
 
+          // --- 2. GESTÃO DE MENUS ---
           "menus.py": `
 import streamlit as st
 from database import query_supabase
@@ -58,21 +62,22 @@ def gerenciar_menu_visual(categoria, lista_padrao):
     opcoes = [item['valor'] for item in dados]
     
     st.markdown(f"**⚙️ {categoria.upper()}**")
-    col1, col2 = st.columns(2)
-    novo = col1.text_input(f"Novo em {categoria}", key=f"add_{categoria}")
-    if col1.button("➕", key=f"btn_add_{categoria}"):
+    col1, col2 = st.columns([3, 1])
+    novo = col1.text_input(f"Adicionar em {categoria}", key=f"in_{categoria}")
+    if col2.button("➕", key=f"bt_{categoria}"):
         if novo and novo not in opcoes:
             query_supabase("POST", "opcoes_custom", dados={"categoria": categoria, "valor": novo})
             st.rerun()
-            
-    remover = col2.selectbox(f"Remover", ["---"] + opcoes, key=f"del_{categoria}")
-    if col2.button("🗑️", key=f"btn_del_{categoria}"):
+    
+    remover = st.selectbox("Excluir opção", ["---"] + opcoes, key=f"del_sel_{categoria}")
+    if st.button(f"🗑️ Remover de {categoria}", key=f"bt_del_{categoria}"):
         if remover != "---":
             query_supabase("DELETE", "opcoes_custom", params={"categoria": f"eq.{categoria}", "valor": f"eq.{remover}"})
             st.rerun()
     return opcoes
 `,
 
+          // --- 3. MÓDULO DE PEDIDOS (A-Q) ---
           "pedidos.py": `
 import streamlit as st
 import pandas as pd
@@ -83,73 +88,106 @@ from menus import gerenciar_menu_visual
 def exibir_pedidos():
     st.title("📋 GESTÃO DE PEDIDOS (A-Q)")
 
-    with st.expander("🛠️ GERENCIAR MENUS SUSPENSOS"):
+    with st.expander("🛠️ CONFIGURAR LISTAS DO SISTEMA"):
         c_status = gerenciar_menu_visual("status", ["GAS", "CONF", "IMPR", "CANC"])
+        st.divider()
         c_baixado = gerenciar_menu_visual("baixado_por", ["IZA", "BEA", "GAB"])
-        c_sit_nf = gerenciar_menu_visual("situacao_nf", ["EMIT", "P0", "DIGI"])
-        c_cnpj = gerenciar_menu_visual("cnpj_nf", ["JAD", "YO", "BW"])
-        c_emissao = gerenciar_menu_visual("emissao_nf", ["IZA", "BEA"])
-        c_separador = gerenciar_menu_visual("separador", ["EDUARDO", "LUCAS"])
-        c_conferente = gerenciar_menu_visual("conferente", ["EDUARDO", "LUCAS"])
-        c_expedicao = gerenciar_menu_visual("expedicao", ["EDUARDO", "LUCAS"])
+        st.divider()
+        c_separador = gerenciar_menu_visual("separador", ["EDUARDO", "LUCAS", "JONATHAN"])
 
-    # --- FORMULÁRIO COMPLETO ---
     with st.expander("➕ LANÇAR NOVO PEDIDO", expanded=True):
-        with st.form("form_aq", clear_on_submit=True):
-            st.markdown("### 🔹 Cadastro e Transporte")
+        with st.form("form_pedidos_completo"):
+            st.markdown("### 🔹 Cadastro (A-D)")
             col1, col2, col3, col4 = st.columns(4)
             p_st = col1.selectbox("Status", [""] + c_status)
             p_bx = col2.selectbox("Baixado", [""] + c_baixado)
-            p_ped = col3.text_input("Nº Pedido")
+            p_num = col3.text_input("Nº Pedido")
             p_dt = col4.date_input("Data", value=date.today())
 
-            col5, col6, col7, col8 = st.columns(4)
+            st.markdown("### 🔹 Logística e Cliente (E-K)")
+            col5, col6, col7 = st.columns(3)
             p_cli = col5.text_input("Cliente")
             p_tr = col6.text_input("Transportadora")
-            p_nf_s = col7.selectbox("Sit. NF", [""] + c_sit_nf)
-            p_nf_n = col8.text_input("Nº NF")
+            p_nf = col7.text_input("Nº Nota Fiscal")
 
-            st.markdown("### 🔹 Separação e Expedição")
-            col9, col10, col11, col12 = st.columns(4)
-            p_sep = col9.selectbox("Separador", [""] + c_separador)
-            p_dt_s = col10.date_input("Data Sep.", value=date.today())
-            p_conf = col11.selectbox("Conferente", [""] + c_conferente)
-            p_dt_c = col12.date_input("Data Conf.", value=date.today())
+            st.markdown("### 🔹 Separação e Conferência (L-Q)")
+            col8, col9, col10 = st.columns(3)
+            p_sep = col8.selectbox("Separador", [""] + c_separador)
+            p_conf = col9.text_input("Conferente")
+            p_exp = col10.text_input("Expedição")
 
-            if st.form_submit_button("💾 SALVAR REGISTRO COMPLETO"):
-                if p_ped and p_cli:
-                    novo = {
-                        "status": p_st, "baixado_por": p_bx, "pedido": p_ped,
+            if st.form_submit_button("💾 SALVAR REGISTRO"):
+                if p_num and p_cli:
+                    dados = {
+                        "status": p_st, "baixado_por": p_bx, "pedido": p_num,
                         "data": p_dt.strftime("%d/%m/%Y"), "cliente": p_cli,
-                        "transportadora": p_tr, "situacao_nf": p_nf_s, "n_nf": p_nf_n,
-                        "separador": p_sep, "data_separacao": p_dt_s.strftime("%d/%m/%Y"),
-                        "conferente": p_conf, "data_conferencia": p_dt_c.strftime("%d/%m/%Y")
+                        "transportadora": p_tr, "n_nf": p_nf, "separador": p_sep
                     }
-                    query_supabase("POST", "controle_pedidos", dados=novo)
-                    st.success("Pedido salvo!")
+                    query_supabase("POST", "controle_pedidos", dados=dados)
+                    st.success("Pedido registrado!")
                     st.rerun()
 
-    # --- TABELA ---
-    st.subheader("📋 Banco de Dados")
-    dados = query_supabase("GET", "controle_pedidos", params={"order": "id.desc"})
-    if dados:
-        df = pd.DataFrame(dados)
+    st.subheader("📊 Visualização de Dados")
+    dados_nuvem = query_supabase("GET", "controle_pedidos", params={"order": "id.desc"})
+    if dados_nuvem:
+        df = pd.DataFrame(dados_nuvem)
         st.data_editor(df, use_container_width=True)
-` ,
+`,
 
+          // --- 4. MÓDULO DE ATENDIMENTO (MOTORISTAS) ---
+          "atendimento.py": `
+import streamlit as st
+import pandas as pd
+from database import query_supabase
+from datetime import datetime
+
+def exibir_atendimento():
+    st.title("🚛 ATENDIMENTO LOGÍSTICO")
+    
+    with st.form("atendimento_motorista"):
+        col1, col2 = st.columns(2)
+        m_cliente = col1.text_input("Cliente/Destino")
+        m_transp = col1.text_input("Transportadora")
+        m_chegada = col2.text_input("Horário Chegada (HH:MM)")
+        m_status = col2.selectbox("Situação", ["Aguardando", "Em Carga", "Liberado"])
+        
+        if st.form_submit_button("Registrar Movimentação"):
+            dados = {
+                "cliente": m_cliente,
+                "transp": m_transp,
+                "chegada": m_chegada,
+                "status": m_status,
+                "data_referencia": datetime.now().strftime("%d/%m/%Y")
+            }
+            query_supabase("POST", "registros", dados=dados)
+            st.success("Registro de motorista salvo!")
+            st.rerun()
+
+    st.subheader("📋 Movimentação do Dia")
+    registros = query_supabase("GET", "registros", params={"order": "id.desc"})
+    if registros:
+        st.table(pd.DataFrame(registros))
+`,
+
+          // --- 5. ARQUIVO PRINCIPAL (ROTEADOR) ---
           "main.py": `
 import streamlit as st
 from pedidos import exibir_pedidos
+from atendimento import exibir_atendimento
 
-st.set_page_config(page_title="KAIROS | Sistema BW", layout="wide")
+st.set_page_config(page_title="KAIROS | Logística", layout="wide")
+
 st.sidebar.title("KAIROS 📦")
-aba = st.sidebar.radio("Navegação", ["Dashboard", "Pedidos"])
+st.sidebar.markdown("---")
+opcao = st.sidebar.radio("Selecione o Módulo:", ["📊 Dashboard", "📝 Gestão de Pedidos", "🚛 Atendimento"])
 
-if aba == "Dashboard":
-    st.title("📊 Dashboard Geral")
-    st.info("Sistema de Gestão Logística A-Q carregado com sucesso.")
-else:
+if opcao == "📊 Dashboard":
+    st.title("Painel de Controle")
+    st.write("Bem-vindo ao sistema modular.")
+elif opcao == "📝 Gestão de Pedidos":
     exibir_pedidos()
+elif opcao == "🚛 Atendimento":
+    exibir_atendimento()
 `
         },
       }, document.getElementById("root"));
