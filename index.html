@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KAIROS | Sistema Logístico</title>
+    <title>KAIROS | Logística Operacional</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.63.1/build/stlite.css" />
     <style>body { background-color: #0f172a; margin: 0; }</style>
 </head>
@@ -19,7 +19,6 @@
 import requests
 import pandas as pd
 
-# Suas credenciais do projeto Sistema BW HTML
 URL_BASE = "https://lnnidnxaxcpuutyyxowd.supabase.co/rest/v1"
 HEADERS = {
     "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxubmlkbnhheGNwdXV0eXl4b3dkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNzQ4MjIsImV4cCI6MjA4ODg1MDgyMn0.ysE7PQ6Ce_MtfWPtUWeUVmfNAkjKiFJqrK6kAyicB4g",
@@ -28,60 +27,87 @@ HEADERS = {
     "Prefer": "return=representation"
 }
 
-def carregar_pedidos():
+def carregar_dados(tabela):
     try:
-        response = requests.get(f"{URL_BASE}/controle_pedidos?select=*", headers=HEADERS)
+        response = requests.get(f"{URL_BASE}/{tabela}?select=*", headers=HEADERS)
         return pd.DataFrame(response.json())
     except:
         return pd.DataFrame()
 
-def salvar_pedido(dados):
-    return requests.post(f"{URL_BASE}/controle_pedidos", headers=HEADERS, json=dados)
+def salvar_registro(tabela, dados):
+    return requests.post(f"{URL_BASE}/{tabela}", headers=HEADERS, json=dados)
+`,
 
-def get_opcoes(categoria):
-    try:
-        response = requests.get(f"{URL_BASE}/opcoes_custom?categoria=eq.{categoria}&select=valor", headers=HEADERS)
-        return [item['valor'] for item in response.json()]
-    except:
-        return []
+          "atendimento.py": `
+import streamlit as st
+from database import salvar_registro, carregar_dados
+from datetime import datetime
+
+def exibir_atendimento():
+    st.header("🚛 Atendimento de Motoristas")
+    
+    with st.form("form_atendimento"):
+        col1, col2 = st.columns(2)
+        cliente = col1.text_input("Cliente")
+        transp = col1.text_input("Transportadora")
+        publico = col2.selectbox("Público", ["Interno", "Externo"])
+        chegada = col2.text_input("Horário Chegada (HH:MM)")
+        
+        if st.form_submit_button("Registrar Entrada"):
+            dados = {
+                "cliente": cliente, 
+                "transp": transp, 
+                "publico": publico, 
+                "chegada": chegada,
+                "data_referencia": datetime.now().strftime("%d/%m/%Y")
+            }
+            salvar_registro("registros", dados)
+            st.success("Motorista registrado!")
+
+    st.subheader("Histórico de Hoje")
+    df = carregar_dados("registros")
+    if not df.empty:
+        st.dataframe(df, use_container_width=True)
 `,
 
           "pedidos.py": `
 import streamlit as st
-from database import carregar_pedidos, salvar_pedido
+from database import carregar_dados, salvar_registro
 
 def exibir_pedidos():
     st.header("📝 Gestão de Pedidos")
-    
-    with st.form("novo_pedido"):
-        col1, col2 = st.columns(2)
-        p_num = col1.text_input("Número do Pedido")
-        p_cli = col1.text_input("Cliente")
-        p_transp = col2.text_input("Transportadora")
-        if st.form_submit_button("Salvar Pedido"):
-            if p_num and p_cli:
-                salvar_pedido({"pedido": p_num, "cliente": p_cli, "transportadora": p_transp})
-                st.success("Salvo com sucesso!")
+    with st.expander("Cadastrar Novo Pedido"):
+        with st.form("novo_pedido"):
+            p_num = st.text_input("Número do Pedido")
+            p_cli = st.text_input("Cliente")
+            if st.form_submit_button("Salvar"):
+                salvar_registro("controle_pedidos", {"pedido": p_num, "cliente": p_cli})
+                st.success("Pedido Salvo!")
                 st.rerun()
-
-    st.subheader("Pedidos Recentes")
-    df = carregar_pedidos()
+    
+    df = carregar_dados("controle_pedidos")
     if not df.empty:
         st.dataframe(df, use_container_width=True)
 `,
 
           "main.py": `
 import streamlit as st
+from atendimento import exibir_atendimento
 from pedidos import exibir_pedidos
 
-st.set_page_config(page_title="Painel Logístico", layout="wide")
+st.set_page_config(page_title="KAIROS | Logística", layout="wide")
 st.sidebar.title("KAIROS 📦")
-aba = st.sidebar.radio("Navegação", ["Dashboard", "Pedidos"])
+aba = st.sidebar.radio("Navegação", ["Dashboard", "Atendimento", "Pedidos"])
 
 if aba == "Dashboard":
-    st.title("📊 Painel Geral")
-    st.success("Conectado via API REST (Modo Leve)")
-    st.info("Este modo garante 100% de compatibilidade com o navegador.")
+    st.title("📊 Indicadores Operacionais")
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Status", "Online")
+    col2.metric("Banco", "Conectado")
+    col3.metric("Versão", "2.0 (HTML)")
+    
+elif aba == "Atendimento":
+    exibir_atendimento()
 else:
     exibir_pedidos()
 `
