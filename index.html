@@ -19,7 +19,41 @@
         files: {
           // --- ARQUIVO DATABASE ---
           "database.py": `
-# COLE O CONTEÚDO DO SEU database.py AQUI
+import streamlit as st
+from supabase import create_client, Client
+
+# Substitua com os dados que aparecerem em Settings -> API do seu Supabase
+URL = "lnnidnxaxcpuutyyxowd"
+KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxubmlkbnhheGNwdXV0eXl4b3dkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNzQ4MjIsImV4cCI6MjA4ODg1MDgyMn0.ysE7PQ6Ce_MtfWPtUWeUVmfNAkjKiFJqrK6kAyicB4g
+"
+
+def conectar_db():
+    return create_client(URL, KEY)
+
+def get_opcoes(categoria, padrao):
+    supabase = conectar_db()
+    try:
+        response = supabase.table("opcoes_custom").select("valor").eq("categoria", categoria).execute()
+        customs = [row['valor'] for row in response.data]
+        return padrao + customs + ["+ ADICIONAR NOVO"]
+    except:
+        return padrao + ["+ ADICIONAR NOVO"]
+
+def salvar_nova_opcao(categoria, valor):
+    if valor and valor != "+ ADICIONAR NOVO":
+        supabase = conectar_db()
+        supabase.table("opcoes_custom").insert({"categoria": categoria, "valor": valor}).execute()
+
+# Função para buscar todos os pedidos (Antigo pd.read_sql)
+def carregar_pedidos():
+    supabase = conectar_db()
+    response = supabase.table("controle_pedidos").select("*").execute()
+    return pd.DataFrame(response.data)
+
+# Função para salvar pedidos
+def salvar_pedido(dados_dict):
+    supabase = conectar_db()
+    supabase.table("controle_pedidos").insert(dados_dict).execute()
 `,
 
           // --- ARQUIVO PEDIDOS ---
