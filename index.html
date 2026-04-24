@@ -3,188 +3,1683 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KAIROS | Gestão Logística</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.63.1/build/stlite.css" />
-    <style>body { background-color: #0f172a; margin: 0; }</style>
+    <title>SGLO - Sistema de Gestão Logística Operacional</title>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Tema Default (Azul Corporativo) */
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg-body: #f8fafc;
+            --bg-sidebar: #1e293b;
+            --text-sidebar: #f1f5f9;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --border-color: #e2e8f0;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+        }
+
+        /* Temas Adicionais */
+        [data-theme="dark"] {
+            --bg-body: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f1f5f9;
+            --border-color: #334155;
+            --primary: #3b82f6;
+        }
+
+        [data-theme="light"] {
+            --bg-body: #ffffff;
+            --card-bg: #f1f5f9;
+            --text-main: #0f172a;
+            --border-color: #cbd5e1;
+        }
+
+        [data-theme="green"] {
+            --primary: #059669;
+            --primary-hover: #047857;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            overflow-x: hidden;
+            transition: background 0.3s ease;
+        }
+
+        /* Utilidades */
+        .hidden { display: none !important; }
+        .flex { display: flex; }
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-hover); }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-outline { background: transparent; border: 1px solid var(--border-color); color: var(--text-main); }
+
+        /* Login Screen */
+        #login-screen {
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-size: cover;
+            background-position: center;
+            position: fixed;
+            z-index: 1000;
+            top: 0;
+            left: 0;
+        }
+
+        .login-card {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .login-logo {
+            max-width: 150px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            outline: none;
+        }
+
+        /* Layout Principal */
+        #main-layout {
+            display: grid;
+            grid-template-columns: 260px 1fr;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        aside {
+            background: var(--bg-sidebar);
+            color: var(--text-sidebar);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            transition: width 0.3s;
+        }
+
+        .sidebar-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            border-radius: 8px;
+            color: var(--text-sidebar);
+            text-decoration: none;
+            margin-bottom: 5px;
+            transition: 0.2s;
+            cursor: pointer;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background: rgba(255,255,255,0.1);
+        }
+
+        .nav-item span { margin-left: 12px; }
+
+        .logout-btn {
+            margin-top: auto;
+            color: #ff4d4d;
+        }
+
+        /* Content Area */
+        main {
+            padding: 30px;
+            overflow-y: auto;
+            max-height: 100vh;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+        }
+
+        /* Tabelas */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th {
+            text-align: left;
+            padding: 15px;
+            background: rgba(0,0,0,0.02);
+            font-weight: 600;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge-success { background: #dcfce7; color: #166534; }
+        .badge-danger { background: #fee2e2; color: #991b1b; }
+        .badge-warning { background: #fef3c7; color: #92400e; }
+
+        /* Dashboard Grid */
+        .dash-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .dash-card {
+            padding: 20px;
+            border-radius: 12px;
+            background: var(--card-bg);
+            border-left: 5px solid var(--primary);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        /* Modal */
+        .modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        /* Toast */
+        #toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            transform: translateY(100px);
+            transition: 0.3s;
+            z-index: 3000;
+        }
+
+        /* Abas */
+        .tabs { display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); }
+        .tab { padding: 10px 20px; cursor: pointer; border-bottom: 2px solid transparent; }
+        .tab.active { border-bottom-color: var(--primary); font-weight: 600; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
 </head>
-<body>
-    <div id="root"></div>
-    <script src="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.63.1/build/stlite.js"></script>
+<body data-theme="corporate">
+
+    <!-- Toast Notification -->
+    <div id="toast"></div>
+
+    <!-- TELA DE LOGIN -->
+    <div id="login-screen">
+        <div class="login-card">
+            <img id="login-logo-img" src="" alt="SGLO Logo" class="login-logo hidden">
+            <h2 style="margin-bottom: 10px;">Acesso ao Sistema</h2>
+            <p style="margin-bottom: 20px; color: #64748b;">Entre com as suas credenciais</p>
+            
+            <form id="login-form">
+                <div class="form-group">
+                    <label>Utilizador</label>
+                    <input type="text" id="login-user" class="form-control" required placeholder="Digite o seu utilizador">
+                </div>
+                <div class="form-group">
+                    <label>Palavra-passe</label>
+                    <input type="password" id="login-pass" class="form-control" required placeholder="••••••••">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">Entrar</button>
+            </form>
+            <p style="margin-top: 20px; font-size: 12px; color: #94a3b8;">Admin Padrão: admin / admin123</p>
+        </div>
+    </div>
+
+    <!-- LAYOUT PRINCIPAL (PÓS-LOGIN) -->
+    <div id="main-layout" class="hidden">
+        <aside>
+            <div class="sidebar-header">
+                <img id="sidebar-logo-img" src="" alt="Logo" style="max-width: 40px;" class="hidden">
+                <h3 id="app-name">SGLO Ops</h3>
+            </div>
+            
+            <nav id="sidebar-nav">
+                <div class="nav-item active" onclick="switchModule('dashboard')">
+                    <span>📊</span> <span>Dashboard</span>
+                </div>
+                <div class="nav-item" data-module="produtos" onclick="switchModule('produtos')">
+                    <span>📦</span> <span>Produtos</span>
+                </div>
+                <div class="nav-item" data-module="estoque" onclick="switchModule('estoque')">
+                    <span>🏭</span> <span>Estoque</span>
+                </div>
+                <div class="nav-item" data-module="compras" onclick="switchModule('compras')">
+                    <span>🛒</span> <span>Compras</span>
+                </div>
+                <div class="nav-item" data-module="vendas" onclick="switchModule('vendas')">
+                    <span>💰</span> <span>Vendas</span>
+                </div>
+                <div class="nav-item" data-module="config" onclick="switchModule('config')">
+                    <span>⚙️</span> <span>Configurações</span>
+                </div>
+            </nav>
+
+            <div class="nav-item logout-btn" onclick="logout()">
+                <span>🚪</span> <span>Sair do Sistema</span>
+            </div>
+        </aside>
+
+        <main>
+            <header>
+                <h2 id="current-module-title">Dashboard</h2>
+                <div class="flex" style="align-items: center; gap: 15px;">
+                    <span id="user-display" style="font-weight: 500;">Utilizador: Admin</span>
+                </div>
+            </header>
+
+            <div id="module-container">
+                <!-- Conteúdo dos Módulos será injetado aqui via JS -->
+            </div>
+        </main>
+    </div>
+
+    <!-- MODAL GENÉRICO -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <div class="flex" style="justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 id="modal-title">Formulário</h3>
+                <button onclick="closeModal()" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
+            </div>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+
     <script>
-      stlite.mount({
-        requirements: ["pandas", "requests"],
-        entrypoint: "main.py",
-        files: {
-          // --- MÓDULO: CONEXÃO NUVEM ---
-          "database.py": `
-import requests
-import json
-import streamlit as st
+        /***********************************************************
+         * CONSTANTES E ESTADO INICIAL
+         ***********************************************************/
+        const APP_ID = 'sglo_v1';
+        let currentUser = null;
+        let tempCart = []; // Carrinho temporário para compras e vendas
+        let editingOrderId = null; // Usado para identificar se estamos a editar um pedido
+        const apiKey = ""; // Chave da API do Gemini (vazia para injetar em tempo de execução)
+        let data = {
+            usuarios: [],
+            produtos: [],
+            compras: [],
+            vendas: [],
+            config: {
+                tema: 'corporate',
+                logo: '',
+                bgLogin: ''
+            }
+        };
 
-URL_BASE = "https://lnnidnxaxcpuutyyxowd.supabase.co/rest/v1"
-HEADERS = {
-    "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxubmlkbnhheGNwdXV0eXl4b3dkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNzQ4MjIsImV4cCI6MjA4ODg1MDgyMn0.ysE7PQ6Ce_MtfWPtUWeUVmfNAkjKiFJqrK6kAyicB4g",
-    "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxubmlkbnhheGNwdXV0eXl4b3dkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNzQ4MjIsImV4cCI6MjA4ODg1MDgyMn0.ysE7PQ6Ce_MtfWPtUWeUVmfNAkjKiFJqrK6kAyicB4g",
-    "Content-Type": "application/json",
-    "Prefer": "return=representation"
-}
+        const DEFAULTS = {
+            admin: {
+                id: 'admin-0',
+                nome: 'Administrador Master',
+                login: 'admin',
+                pass: 'admin123',
+                perfil: 'admin',
+                permissoes: {
+                    produtos: true,
+                    produtos_edit: true,
+                    estoque: true,
+                    compras: true,
+                    vendas: true,
+                    dashboard: true,
+                    config: true
+                }
+            }
+        };
 
-def query_supabase(metodo, endpoint, dados=None, params=None):
-    url = f"{URL_BASE}/{endpoint}"
-    try:
-        if metodo == "GET":
-            res = requests.get(url, headers=HEADERS, params=params)
-            return res.json()
-        elif metodo == "POST":
-            return requests.post(url, headers=HEADERS, data=json.dumps(dados))
-        elif metodo == "DELETE":
-            return requests.delete(url, headers=HEADERS, params=params)
-    except Exception as e:
-        st.error(f"Erro: {e}")
-        return []
-`,
+        /***********************************************************
+         * INICIALIZAÇÃO
+         ***********************************************************/
+        window.onload = () => {
+            loadStorage();
+            checkSession();
+            applyTheme();
+        };
 
-          // --- MÓDULO: GERENCIADOR DE LISTAS (AGORA COM EXCLUSÃO) ---
-          "menus.py": `
-import streamlit as st
-from database import query_supabase
+        function loadStorage() {
+            const saved = localStorage.getItem(APP_ID);
+            if (saved) {
+                data = JSON.parse(saved);
+            } else {
+                data.usuarios.push(DEFAULTS.admin);
+                saveStorage();
+            }
+        }
 
-def gerenciar_menu_visual(categoria, lista_padrao):
-    # Busca dados atuais
-    dados = query_supabase("GET", "opcoes_custom", params={"categoria": f"eq.{categoria}"})
-    
-    # Se estiver vazio, popula com o padrão
-    if not dados:
-        for p in lista_padrao:
-            query_supabase("POST", "opcoes_custom", dados={"categoria": categoria, "valor": p})
-        dados = query_supabase("GET", "opcoes_custom", params={"categoria": f"eq.{categoria}"})
-    
-    opcoes = sorted([item['valor'] for item in dados])
-    
-    st.markdown(f"**⚙️ Configurar Lista: {categoria.upper()}**")
-    col_add, col_rem = st.columns(2)
-    
-    # Lógica de Adição
-    with col_add:
-        novo = st.text_input(f"Adicionar novo em {categoria}:", key=f"add_in_{categoria}")
-        if st.button(f"➕ Incluir", key=f"btn_add_{categoria}"):
-            if novo and novo not in opcoes:
-                query_supabase("POST", "opcoes_custom", dados={"categoria": categoria, "valor": novo})
-                st.rerun()
+        function saveStorage() {
+            localStorage.setItem(APP_ID, JSON.stringify(data));
+        }
 
-    # Lógica de Remoção (Conforme sua imagem)
-    with col_rem:
-        para_remover = st.selectbox(f"Remover de {categoria}:", ["---"] + opcoes, key=f"sel_rem_{categoria}")
-        if st.button(f"🗑️ Excluir Opção", key=f"btn_rem_{categoria}"):
-            if para_remover != "---":
-                query_supabase("DELETE", "opcoes_custom", params={"categoria": f"eq.{categoria}", "valor": f"eq.{para_remover}"})
-                st.rerun()
-                
-    return opcoes
-`,
+        function checkSession() {
+            const session = localStorage.getItem(APP_ID + '_session');
+            if (session) {
+                currentUser = JSON.parse(session);
+                showMain();
+            } else {
+                showLogin();
+            }
+        }
 
-          // --- MÓDULO: PEDIDOS (COMPLETO A-Q) ---
-          "pedidos.py": `
-import streamlit as st
-import pandas as pd
-from datetime import date
-from database import query_supabase
-from menus import gerenciar_menu_visual
+        async function callGeminiAPI(prompt, schema = null) {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }]
+            };
+            if (schema) {
+                payload.generationConfig = {
+                    responseMimeType: "application/json",
+                    responseSchema: schema
+                };
+            }
 
-def exibir_pedidos():
-    st.title("📋 GESTÃO DE PEDIDOS (A-Q)")
-
-    with st.expander("🛠️ GERENCIAR MENUS SUSPENSOS (Adicionar/Excluir Opções)"):
-        st.info("Configure as opções que aparecem nos campos de seleção.")
-        c_status = gerenciar_menu_visual("status", ["GAS", "CONF", "IMPR", "CANC"])
-        st.divider()
-        c_baixado = gerenciar_menu_visual("baixado_por", ["IZA", "BEA", "GAB"])
-        st.divider()
-        c_sit_nf = gerenciar_menu_visual("situacao_nf", ["EMIT", "P0", "DIGI"])
-        st.divider()
-        c_cnpj = gerenciar_menu_visual("cnpj_nf", ["JAD", "YO", "LOW", "BW", "SUK"])
-        st.divider()
-        c_emissao = gerenciar_menu_visual("emissao_nf", ["IZA", "BEA"])
-        st.divider()
-        c_separador = gerenciar_menu_visual("separador", ["EDUARDO", "LUCAS"])
-        st.divider()
-        c_conferente = gerenciar_menu_visual("conferente", ["EDUARDO", "LUCAS"])
-        st.divider()
-        c_expedicao = gerenciar_menu_visual("expedicao", ["EDUARDO", "LUCAS"])
-
-    with st.expander("➕ LANÇAR NOVO PEDIDO", expanded=True):
-        with st.form("form_global_aq", clear_on_submit=True):
-            st.markdown("### ◆ Informações de Cadastro (A-D)")
-            col1, col2, col3, col4 = st.columns(4)
-            p_st = col1.selectbox("Status", [""] + c_status)
-            p_bx = col2.selectbox("Baixado por", [""] + c_baixado)
-            p_ped = col3.text_input("Nº Pedido")
-            p_dt = col4.date_input("Data", value=date.today())
-
-            st.markdown("### ◆ Detalhes Cliente e Transporte (E-H)")
-            col5, col6, col7, col8 = st.columns(4)
-            p_cli = col5.text_input("Cliente")
-            p_tra = col6.text_input("Transportadora")
-            p_snf = col7.selectbox("Situação da NF", [""] + c_sit_nf)
-            p_nnf = col8.text_input("Nº Nota Fiscal")
-
-            st.markdown("### ◆ Dados Fiscais e Coleta (I-K)")
-            col9, col10, col11 = st.columns(3)
-            p_cnj = col9.selectbox("CNPJ NF", [""] + c_cnpj)
-            p_emi = col10.selectbox("Emissão NF", [""] + c_emissao)
-            p_col = col11.text_input("Nº Coleta")
-
-            st.markdown("### ◆ Depósito: Separação e Conferência (L-O)")
-            col12, col13, col14, col15 = st.columns(4)
-            p_sep = col12.selectbox("Separador", [""] + c_separador)
-            p_dts = col13.date_input("Data da Separação", value=date.today())
-            p_conf = col14.selectbox("Conferente", [""] + c_conferente)
-            p_dtc = col15.date_input("Data da conferência", value=date.today())
-
-            st.markdown("### ◆ Finalização e Expedição (P-Q)")
-            col16, col17 = st.columns(2)
-            p_exp = col16.selectbox("Expedição", [""] + c_expedicao)
-            p_dte = col17.date_input("Data da Expedição", value=date.today())
-
-            if st.form_submit_button("💾 SALVAR REGISTRO COMPLETO (A-Q)"):
-                if not p_ped or not p_cli:
-                    st.warning("Preencha Pedido e Cliente.")
-                else:
-                    dados = {
-                        "status": p_st, "baixado_por": p_bx, "pedido": p_ped, "data": p_dt.strftime("%Y-%m-%d"),
-                        "cliente": p_cli, "transportadora": p_tra, "situacao_nf": p_snf, "n_nf": p_nnf,
-                        "cnpj_nf": p_cnj, "emissao_nf": p_emi, "n_coleta": p_col, "separador": p_sep,
-                        "data_separacao": p_dts.strftime("%Y-%m-%d"), "conferente": p_conf,
-                        "data_conferencia": p_dtc.strftime("%Y-%m-%d"), "expedicao": p_exp,
-                        "data_expedicao": p_dte.strftime("%Y-%m-%d")
+            const delays = [1000, 2000, 4000, 8000, 16000];
+            for (let i = 0; i < 5; i++) {
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!response.ok) throw new Error('Falha na API Gemini');
+                    const result = await response.json();
+                    const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                    return schema ? JSON.parse(text) : text;
+                } catch (err) {
+                    if (i === 4) {
+                        showToast("Erro ao contactar a IA. Verifique a sua conexão ou tente mais tarde.", "danger");
+                        return null;
                     }
-                    query_supabase("POST", "controle_pedidos", dados=dados)
-                    st.success("Salvo!")
-                    st.rerun()
+                    await new Promise(r => setTimeout(r, delays[i]));
+                }
+            }
+        }
 
-    res = query_supabase("GET", "controle_pedidos", params={"order": "id.desc"})
-    if res:
-        st.subheader("📋 Banco de Dados")
-        df = pd.DataFrame(res)
-        st.data_editor(df, use_container_width=True, hide_index=True)
-`,
+        async function gerarInsightsIA() {
+            const btn = document.getElementById('btn-ia-insight');
+            const resultDiv = document.getElementById('ia-insights-result');
+            btn.innerText = "A analisar...";
+            btn.disabled = true;
 
-          "main.py": `
-import streamlit as st
-from pedidos import exibir_pedidos
+            const criticos = data.produtos.filter(p => p.estoqueAtual < p.estoqueMin).map(p => `${p.nome} (Faltam ${p.estoqueMin - p.estoqueAtual})`).join(', ');
+            const vendas = data.vendas.slice(-5).map(v => v.itens ? v.itens.map(i => i.nome).join(', ') : '').join('; ');
 
-st.set_page_config(page_title="KAIROS", layout="wide")
-st.sidebar.title("KAIROS 📦")
-aba = st.sidebar.radio("Navegação", ["Dashboard", "Pedidos"])
+            const prompt = `Aja como um consultor de logística experiente. 
+            O meu sistema tem os seguintes produtos em estado crítico (precisam de reposição urgente): ${criticos || 'Nenhum'}. 
+            As minhas vendas recentes incluíram os itens: ${vendas || 'Nenhuma'}.
+            Escreva uma breve análise (no máximo 3 linhas) sugerindo o que devo priorizar nas minhas próximas compras e porquê. Responda em Português de Portugal.`;
 
-if aba == "Dashboard":
-    st.title("Painel Geral")
-    st.write("Sistema Online")
-else:
-    exibir_pedidos()
-`
-        },
-      }, document.getElementById("root"));
+            const resposta = await callGeminiAPI(prompt);
+            if (resposta) {
+                resultDiv.innerHTML = `<strong>Análise da IA:</strong> ${resposta}`;
+            } else {
+                resultDiv.innerHTML = "Não foi possível gerar a análise neste momento.";
+            }
+            btn.innerText = "✨ Analisar Agora";
+            btn.disabled = false;
+        }
+
+        async function gerarDadosProdutoComIA() {
+            const nomeInput = document.getElementById('p-nome');
+            if (!nomeInput.value) {
+                showToast("Digite o nome do produto primeiro!", "danger");
+                return;
+            }
+            
+            showToast("✨ IA a analisar produto...", "info");
+            const prompt = `Considere o produto comercial chamado "${nomeInput.value}".
+            Sugira uma categoria comum de mercado, um preço de custo realista e um preço de venda com uma boa margem de lucro.`;
+            
+            const schema = {
+                type: "OBJECT",
+                properties: {
+                    categoria: { type: "STRING" },
+                    precoCusto: { type: "NUMBER" },
+                    precoVenda: { type: "NUMBER" }
+                }
+            };
+
+            const sugestao = await callGeminiAPI(prompt, schema);
+            if (sugestao) {
+                document.getElementById('p-cat').value = sugestao.categoria || '';
+                document.getElementById('p-custo').value = sugestao.precoCusto || '';
+                document.getElementById('p-venda').value = sugestao.precoVenda || '';
+                showToast("✨ Campos preenchidos com IA!", "success");
+            }
+        }
+
+        /***********************************************************
+         * AUTENTICAÇÃO
+         ***********************************************************/
+        document.getElementById('login-form').onsubmit = (e) => {
+            e.preventDefault();
+            const u = document.getElementById('login-user').value;
+            const p = document.getElementById('login-pass').value;
+
+            const user = data.usuarios.find(x => x.login === u && x.pass === p);
+            if (user) {
+                currentUser = user;
+                localStorage.setItem(APP_ID + '_session', JSON.stringify(user));
+                showMain();
+                showToast("Bem-vindo(a), " + user.nome, "success");
+            } else {
+                showToast("Credenciais inválidas!", "danger");
+            }
+        };
+
+        function logout() {
+            localStorage.removeItem(APP_ID + '_session');
+            location.reload();
+        }
+
+        function showLogin() {
+            document.getElementById('login-screen').classList.remove('hidden');
+            document.getElementById('main-layout').classList.add('hidden');
+            
+            // Aplicar logo e fundo se houver
+            if (data.config.logo) {
+                document.getElementById('login-logo-img').src = data.config.logo;
+                document.getElementById('login-logo-img').classList.remove('hidden');
+            }
+            if (data.config.bgLogin) {
+                document.getElementById('login-screen').style.backgroundImage = `url(${data.config.bgLogin})`;
+            }
+        }
+
+        function showMain() {
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('main-layout').classList.remove('hidden');
+            document.getElementById('user-display').innerText = `Olá, ${currentUser.nome} (${currentUser.perfil})`;
+            
+            if (data.config.logo) {
+                document.getElementById('sidebar-logo-img').src = data.config.logo;
+                document.getElementById('sidebar-logo-img').classList.remove('hidden');
+            }
+
+            // Filtrar itens do menu baseado em permissão
+            renderMenu();
+            switchModule('dashboard');
+        }
+
+        function renderMenu() {
+            const items = document.querySelectorAll('.nav-item[data-module]');
+            items.forEach(item => {
+                const mod = item.getAttribute('data-module');
+                if (currentUser.perfil !== 'admin' && !currentUser.permissoes[mod]) {
+                    item.classList.add('hidden');
+                } else {
+                    item.classList.remove('hidden');
+                }
+            });
+        }
+
+        /***********************************************************
+         * NAVEGAÇÃO DE MÓDULOS
+         ***********************************************************/
+        function switchModule(mod) {
+            const container = document.getElementById('module-container');
+            const title = document.getElementById('current-module-title');
+            
+            // Update UI Active State
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            const activeNav = document.querySelector(`.nav-item[data-module="${mod}"]`) || document.querySelector('.nav-item:first-child');
+            if(activeNav) activeNav.classList.add('active');
+
+            switch(mod) {
+                case 'dashboard': renderDashboard(container, title); break;
+                case 'produtos': renderProdutos(container, title); break;
+                case 'estoque': renderEstoque(container, title); break;
+                case 'compras': renderMovimentacao(container, title, 'compras'); break;
+                case 'vendas': renderMovimentacao(container, title, 'vendas'); break;
+                case 'config': renderConfig(container, title); break;
+            }
+        }
+
+        /***********************************************************
+         * MÓDULO: DASHBOARD
+         ***********************************************************/
+        function renderDashboard(container, title) {
+            title.innerText = "Painel de Controle";
+            
+            const prodAbaixoMin = data.produtos.filter(p => p.estoqueAtual < p.estoqueMin).length;
+            const totalItens = data.produtos.reduce((acc, p) => acc + (p.estoqueAtual || 0), 0);
+            
+            // Calcular entradas/saídas do mês atual
+            const now = new Date();
+            const mesAtualStr = now.toISOString().substring(0, 7);
+            const entradasMes = data.compras.filter(c => c.data.startsWith(mesAtualStr)).length;
+            const saídasMes = data.vendas.filter(v => v.data.startsWith(mesAtualStr)).length;
+
+            container.innerHTML = `
+                <div class="dash-grid">
+                    <div class="dash-card">
+                        <small>Total de Produtos</small>
+                        <h2>${data.produtos.length}</h2>
+                    </div>
+                    <div class="dash-card" style="border-left-color: var(--success)">
+                        <small>Itens em Estoque</small>
+                        <h2>${totalItens}</h2>
+                    </div>
+                    <div class="dash-card" style="border-left-color: var(--danger)">
+                        <small>Abaixo do Mínimo</small>
+                        <h2>${prodAbaixoMin}</h2>
+                    </div>
+                    <div class="dash-card" style="border-left-color: var(--warning)">
+                        <small>Movim. (Mês)</small>
+                        <h2>${entradasMes + saídasMes}</h2>
+                    </div>
+                </div>
+
+                <div class="grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div class="card">
+                        <h4>Top 10 Mais Vendidos</h4>
+                        <div style="height: 250px;"><canvas id="chartTopVendas"></canvas></div>
+                    </div>
+                    <div class="card">
+                        <h4>Produtos em Estado Crítico</h4>
+                        <div style="max-height: 250px; overflow-y: auto;">
+                            <table>
+                                <thead>
+                                    <tr><th>Produto</th><th>Estoque</th><th>Mín.</th></tr>
+                                </thead>
+                                <tbody>
+                                    ${data.produtos.filter(p => p.estoqueAtual < p.estoqueMin).length ? 
+                                      data.produtos.filter(p => p.estoqueAtual < p.estoqueMin).map(p => `
+                                        <tr>
+                                            <td>${p.nome}</td>
+                                            <td style="color: var(--danger); font-weight: bold;">${p.estoqueAtual}</td>
+                                            <td>${p.estoqueMin}</td>
+                                        </tr>
+                                    `).join('') : '<tr><td colspan="3">Nenhum produto crítico.</td></tr>'}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top: 20px; background: linear-gradient(to right, rgba(139, 92, 246, 0.05), transparent); border-left: 5px solid #8b5cf6;">
+                    <div class="flex" style="justify-content: space-between; align-items: center;">
+                        <h4 style="color: #8b5cf6;">✨ Consultor de Estoque (Inteligência Artificial)</h4>
+                        <button id="btn-ia-insight" class="btn btn-primary" style="background: #8b5cf6;" onclick="gerarInsightsIA()">✨ Analisar Agora</button>
+                    </div>
+                    <div id="ia-insights-result" style="margin-top: 15px; font-size: 14px; line-height: 1.5;">
+                        Clique no botão para gerar insights sobre o seu inventário e sugestões de prioridade para compras, alimentado pelo Gemini.
+                    </div>
+                </div>
+            `;
+
+            // Init Chart
+            setTimeout(initDashboardCharts, 100);
+        }
+
+        function initDashboardCharts() {
+            const canvas = document.getElementById('chartTopVendas');
+            if(!canvas) return;
+            const ctx = canvas.getContext('2d');
+            
+            // Agrupar vendas por produto
+            const vendasAgrupadas = {};
+            data.vendas.forEach(v => {
+                if (v.itens) {
+                    v.itens.forEach(item => {
+                        vendasAgrupadas[item.produtoId] = (vendasAgrupadas[item.produtoId] || 0) + item.quantidade;
+                    });
+                } else if (v.produtoId) { // Suporte a registos antigos
+                    vendasAgrupadas[v.produtoId] = (vendasAgrupadas[v.produtoId] || 0) + v.quantidade;
+                }
+            });
+
+            const sorted = Object.entries(vendasAgrupadas)
+                .map(([id, qty]) => {
+                    const p = data.produtos.find(prod => prod.id === id);
+                    return { nome: p ? p.nome : 'Excluído', qty };
+                })
+                .sort((a, b) => b.qty - a.qty)
+                .slice(0, 10);
+
+            if(window.myChart) window.myChart.destroy();
+            window.myChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: sorted.length ? sorted.map(x => x.nome) : ['Sem dados'],
+                    datasets: [{
+                        label: 'Quantidade Vendida',
+                        data: sorted.length ? sorted.map(x => x.qty) : [0],
+                        backgroundColor: '#2563eb'
+                    }]
+                },
+                options: { 
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        }
+
+        /***********************************************************
+         * MÓDULO: PRODUTOS
+         ***********************************************************/
+        function renderProdutos(container, title) {
+            title.innerText = "Gestão de Catálogo";
+            const canEdit = currentUser.perfil === 'admin' || currentUser.permissoes.produtos_edit;
+
+            container.innerHTML = `
+                <div class="card flex" style="justify-content: space-between; align-items: center;">
+                    <input type="text" id="prod-search" class="form-control" placeholder="Buscar por nome ou SKU..." style="max-width: 300px;" onkeyup="filterProdutos()">
+                    ${canEdit ? `<button class="btn btn-primary" onclick="openProdutoModal()">+ Novo Produto</button>` : ''}
+                </div>
+                <div class="card">
+                    <table id="table-produtos">
+                        <thead>
+                            <tr>
+                                <th>SKU</th>
+                                <th>Nome</th>
+                                <th>Categoria</th>
+                                <th>Un.</th>
+                                <th>Preço Venda</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="body-produtos">
+                            <!-- Injetado via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            filterProdutos();
+        }
+
+        function filterProdutos() {
+            const term = document.getElementById('prod-search').value.toLowerCase();
+            const canEdit = currentUser.perfil === 'admin' || currentUser.permissoes.produtos_edit;
+            const filtered = data.produtos.filter(p => 
+                p.nome.toLowerCase().includes(term) || p.sku.toLowerCase().includes(term)
+            );
+
+            const tbody = document.getElementById('body-produtos');
+            tbody.innerHTML = filtered.map(p => {
+                const isLow = p.estoqueAtual < p.estoqueMin;
+                return `
+                <tr>
+                    <td><code>${p.sku}</code></td>
+                    <td>${p.nome}</td>
+                    <td>${p.categoria}</td>
+                    <td>${p.unidade}</td>
+                    <td>R$ ${parseFloat(p.precoVenda).toFixed(2)}</td>
+                    <td>
+                        <span class="badge ${isLow ? 'badge-danger' : 'badge-success'}">
+                            ${isLow ? 'Abaixo do Mín.' : 'Normal'}
+                        </span>
+                    </td>
+                    <td>
+                        <button class="btn btn-outline" onclick="viewHistorico('${p.id}')">👁️</button>
+                        ${canEdit ? `<button class="btn btn-outline" onclick="openProdutoModal('${p.id}')">✏️</button>` : ''}
+                    </td>
+                </tr>
+                `;
+            }).join('');
+        }
+
+        function openProdutoModal(id = null) {
+            const p = id ? data.produtos.find(x => x.id === id) : null;
+            // Gera o SKU automático (01, 02, 03...) baseado no tamanho da lista de produtos
+            const nextSku = p ? p.sku : String(data.produtos.length + 1).padStart(2, '0');
+            const modalBody = document.getElementById('modal-body');
+            document.getElementById('modal-title').innerText = id ? "Editar Produto" : "Registar Produto";
+            
+            modalBody.innerHTML = `
+                <form id="form-produto">
+                    <input type="hidden" id="p-id" value="${id || ''}">
+                    <div class="grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div class="form-group">
+                            <label>Nome do Produto <span style="cursor:pointer; color:#8b5cf6; font-size:11px; float:right; padding:2px 5px; background: rgba(139,92,246,0.1); border-radius:4px;" onclick="gerarDadosProdutoComIA()">✨ Sugerir Dados (IA)</span></label>
+                            <input type="text" id="p-nome" class="form-control" value="${p?.nome || ''}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Código/SKU (Auto)</label>
+                            <input type="text" id="p-sku" class="form-control" value="${nextSku}" required readonly style="background-color: #f1f5f9; cursor: not-allowed;" title="Gerado automaticamente">
+                        </div>
+                        <div class="form-group">
+                            <label>Categoria</label>
+                            <input type="text" id="p-cat" class="form-control" value="${p?.categoria || ''}" placeholder="Ex: Bebidas">
+                        </div>
+                        <div class="form-group">
+                            <label>Unidade</label>
+                            <select id="p-un" class="form-control">
+                                <option value="un" ${p?.unidade === 'un' ? 'selected' : ''}>Unidade (un)</option>
+                                <option value="kg" ${p?.unidade === 'kg' ? 'selected' : ''}>Quilo (kg)</option>
+                                <option value="cx" ${p?.unidade === 'cx' ? 'selected' : ''}>Caixa (cx)</option>
+                                <option value="lt" ${p?.unidade === 'lt' ? 'selected' : ''}>Litro (lt)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Preço Custo (R$)</label>
+                            <input type="number" step="0.01" id="p-custo" class="form-control" value="${p?.precoCusto || ''}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Preço Venda (R$)</label>
+                            <input type="number" step="0.01" id="p-venda" class="form-control" value="${p?.precoVenda || ''}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Estoque Mínimo</label>
+                            <input type="number" id="p-min" class="form-control" value="${p?.estoqueMin || 0}" required>
+                        </div>
+                    </div>
+                    <div class="flex" style="justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                        <button type="button" class="btn btn-outline" onclick="closeModal()">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Guardar Produto</button>
+                    </div>
+                </form>
+            `;
+
+            document.getElementById('form-produto').onsubmit = (e) => {
+                e.preventDefault();
+                const pid = document.getElementById('p-id').value;
+                const newObj = {
+                    id: pid || 'prod-' + Date.now(),
+                    nome: document.getElementById('p-nome').value,
+                    sku: document.getElementById('p-sku').value,
+                    categoria: document.getElementById('p-cat').value,
+                    unidade: document.getElementById('p-un').value,
+                    precoCusto: parseFloat(document.getElementById('p-custo').value),
+                    precoVenda: parseFloat(document.getElementById('p-venda').value),
+                    estoqueMin: parseInt(document.getElementById('p-min').value),
+                    estoqueAtual: pid ? data.produtos.find(x => x.id === pid).estoqueAtual : 0
+                };
+
+                if (pid) {
+                    const idx = data.produtos.findIndex(x => x.id === pid);
+                    data.produtos[idx] = newObj;
+                } else {
+                    data.produtos.push(newObj);
+                }
+
+                saveStorage();
+                closeModal();
+                showToast("Produto guardado com sucesso!", "success");
+                switchModule('produtos');
+            };
+
+            openModal();
+        }
+
+        /***********************************************************
+         * MÓDULO: ESTOQUE
+         ***********************************************************/
+        function renderEstoque(container, title) {
+            title.innerText = "Monitoramento de Estoque";
+            container.innerHTML = `
+                <div class="card flex" style="gap: 15px;">
+                    <input type="text" id="est-search" class="form-control" placeholder="Buscar produto..." style="max-width: 300px;" onkeyup="filterEstoque()">
+                    <select id="est-filter-status" class="form-control" style="max-width: 200px;" onchange="filterEstoque()">
+                        <option value="todos">Todos os Status</option>
+                        <option value="critico">Abaixo do Mínimo</option>
+                        <option value="ok">Estoque Normal</option>
+                    </select>
+                </div>
+                <div class="card">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Produto</th>
+                                <th>SKU</th>
+                                <th>Qtd Atual</th>
+                                <th>Mínimo</th>
+                                <th>Diferença</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="body-estoque"></tbody>
+                    </table>
+                </div>
+            `;
+            filterEstoque();
+        }
+
+        function filterEstoque() {
+            const term = document.getElementById('est-search').value.toLowerCase();
+            const status = document.getElementById('est-filter-status').value;
+            
+            let filtered = data.produtos.filter(p => p.nome.toLowerCase().includes(term) || p.sku.toLowerCase().includes(term));
+            
+            if (status === 'critico') filtered = filtered.filter(p => p.estoqueAtual < p.estoqueMin);
+            if (status === 'ok') filtered = filtered.filter(p => p.estoqueAtual >= p.estoqueMin);
+
+            // Ordenar os produtos por ordem alfabética (nome)
+            filtered.sort((a, b) => a.nome.localeCompare(b.nome));
+
+            document.getElementById('body-estoque').innerHTML = filtered.map(p => {
+                const diff = p.estoqueMin - p.estoqueAtual;
+                return `
+                <tr>
+                    <td>${p.nome}</td>
+                    <td><code>${p.sku}</code></td>
+                    <td style="font-weight: 700; color: ${p.estoqueAtual < p.estoqueMin ? 'var(--danger)' : 'var(--success)'}">${p.estoqueAtual} ${p.unidade}</td>
+                    <td>${p.estoqueMin}</td>
+                    <td>${diff > 0 ? `<span style="color:var(--danger)">+${diff} unidades</span>` : '-'}</td>
+                    <td><button class="btn btn-outline" onclick="viewHistorico('${p.id}')">Ver Histórico</button></td>
+                </tr>
+                `;
+            }).join('');
+        }
+
+        function viewHistorico(pid) {
+            const p = data.produtos.find(x => x.id === pid);
+            
+            const compras = [];
+            data.compras.forEach(c => {
+                if (c.itens) {
+                    const item = c.itens.find(i => i.produtoId === pid);
+                    if (item) compras.push({ ...c, quantidade: item.quantidade });
+                } else if (c.produtoId === pid) {
+                    compras.push(c);
+                }
+            });
+
+            const vendas = [];
+            data.vendas.forEach(v => {
+                if (v.itens) {
+                    const item = v.itens.find(i => i.produtoId === pid);
+                    if (item) vendas.push({ ...v, quantidade: item.quantidade });
+                } else if (v.produtoId === pid) {
+                    vendas.push(v);
+                }
+            });
+
+            const modalBody = document.getElementById('modal-body');
+            document.getElementById('modal-title').innerText = "Histórico: " + p.nome;
+
+            modalBody.innerHTML = `
+                <div class="tabs">
+                    <div class="tab active" onclick="switchSubTab(this, 'tab-hist-compra')">Compras (Entradas)</div>
+                    <div class="tab" onclick="switchSubTab(this, 'tab-hist-venda')">Vendas (Saídas)</div>
+                </div>
+                <div id="tab-hist-compra" class="tab-content">
+                    <table>
+                        <thead><tr><th>Pedido</th><th>Data</th><th>Fornecedor</th><th>Qtd</th></tr></thead>
+                        <tbody>
+                            ${compras.length ? compras.map(c => `<tr><td>${c.id}</td><td>${c.data}</td><td>${c.fornecedor}</td><td>${c.quantidade}</td></tr>`).join('') : '<tr><td colspan="4">Sem registos</td></tr>'}
+                        </tbody>
+                    </table>
+                </div>
+                <div id="tab-hist-venda" class="tab-content hidden">
+                    <table>
+                        <thead><tr><th>Pedido</th><th>Data</th><th>Cliente</th><th>Qtd</th></tr></thead>
+                        <tbody>
+                            ${vendas.length ? vendas.map(v => `<tr><td>${v.id}</td><td>${v.data}</td><td>${v.cliente}</td><td>${v.quantidade}</td></tr>`).join('') : '<tr><td colspan="4">Sem registos</td></tr>'}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            openModal();
+        }
+
+        /***********************************************************
+         * MÓDULO: MOVIMENTAÇÃO (COMPRAS E VENDAS)
+         ***********************************************************/
+        function renderMovimentacao(container, title, tipo) {
+            const isCompra = tipo === 'compras';
+            title.innerText = isCompra ? "Gestão de Compras (Entradas)" : "Gestão de Vendas (Saídas)";
+
+            container.innerHTML = `
+                <div class="card flex" style="justify-content: space-between; align-items: center;">
+                    <div class="flex" style="gap:10px">
+                        <input type="text" id="mov-search" class="form-control" placeholder="Buscar..." onkeyup="filterMov('${tipo}')">
+                    </div>
+                    <button class="btn btn-primary" onclick="openMovModal('${tipo}')">${isCompra ? '+ Nova Entrada' : '+ Nova Saída'}</button>
+                </div>
+                <div class="card">
+                    <table id="table-mov">
+                        <thead>
+                            <tr>
+                                <th>Pedido</th>
+                                <th>Data</th>
+                                <th>${isCompra ? 'Fornecedor' : 'Cliente'}</th>
+                                <th>Itens</th>
+                                <th>Total</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="body-mov"></tbody>
+                    </table>
+                </div>
+            `;
+            filterMov(tipo);
+        }
+
+        function filterMov(tipo) {
+            const list = data[tipo];
+            const term = document.getElementById('mov-search').value.toLowerCase();
+            const filtered = list.filter(m => 
+                m.id.toLowerCase().includes(term) || 
+                (m.fornecedor || m.cliente).toLowerCase().includes(term)
+            );
+
+            document.getElementById('body-mov').innerHTML = filtered.map(m => {
+                let produtosStr = "";
+                let total = 0;
+
+                if (m.itens) {
+                    const nomes = m.itens.map(i => i.nome);
+                    produtosStr = nomes.length > 2 ? `${nomes[0]}, ${nomes[1]} e mais ${nomes.length - 2}` : nomes.join(', ');
+                    total = m.itens.reduce((acc, item) => acc + (item.quantidade * item.preco), 0);
+                } else {
+                    const p = data.produtos.find(prod => prod.id === m.produtoId);
+                    produtosStr = p ? p.nome : 'Excluído';
+                    total = m.quantidade * (tipo === 'compras' ? m.precoCusto : m.precoVenda);
+                }
+
+                const status = m.status || 'pendente';
+                const statusBadge = status === 'baixado' 
+                    ? `<span class="badge badge-success" title="Baixado em ${new Date(m.dataBaixa).toLocaleDateString()}">Baixado</span>` 
+                    : `<span class="badge badge-warning">Pendente</span>`;
+
+                return `
+                <tr>
+                    <td><code>${m.id}</code></td>
+                    <td>${m.data}</td>
+                    <td>${m.fornecedor || m.cliente}</td>
+                    <td><span style="font-size: 13px; color: #64748b;">${produtosStr}</span></td>
+                    <td style="font-weight: 600;">R$ ${total.toFixed(2)}</td>
+                    <td>${statusBadge}</td>
+                    <td>
+                        <div class="flex" style="gap: 5px;">
+                            <button class="btn btn-outline" style="padding: 5px 8px; font-size: 12px;" onclick="viewPedidoDetails('${m.id}', '${tipo}')" title="Ver Detalhes">👁️</button>
+                            ${status !== 'baixado' ? `
+                                <button class="btn btn-outline" style="padding: 5px 8px; font-size: 12px;" onclick="editMovModal('${m.id}', '${tipo}')" title="Editar Pedido">✏️</button>
+                                <button class="btn btn-primary" style="padding: 5px 8px; font-size: 12px;" onclick="baixarPedido('${m.id}', '${tipo}')" title="Baixar/Finalizar Pedido">✅</button>
+                            ` : ''}
+                        </div>
+                    </td>
+                </tr>
+                `;
+            }).join('');
+        }
+
+        function renderMovModalForm(tipo, pedido = null) {
+            const isCompra = tipo === 'compras';
+            const modalBody = document.getElementById('modal-body');
+            document.getElementById('modal-title').innerText = pedido ? (isCompra ? "Editar Entrada" : "Editar Saída") : (isCompra ? "Registar Entrada Múltipla" : "Registar Saída Múltipla");
+
+            const dataStr = pedido ? pedido.data : new Date().toISOString().substring(0,10);
+            const pessoaStr = pedido ? (pedido.fornecedor || pedido.cliente || '') : '';
+
+            modalBody.innerHTML = `
+                <div class="grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                    <div class="form-group" style="margin: 0;">
+                        <label>Data do Pedido</label>
+                        <input type="date" id="m-data" class="form-control" value="${dataStr}" required>
+                    </div>
+                    <div class="form-group" style="margin: 0;">
+                        <label>${isCompra ? 'Fornecedor' : 'Cliente'}</label>
+                        <input type="text" id="m-pessoa" class="form-control" placeholder="Nome" value="${pessoaStr}" required>
+                    </div>
+                </div>
+
+                <div style="background: rgba(0,0,0,0.02); border: 1px dashed var(--border-color); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <div class="flex" style="justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h5 style="margin: 0; color: var(--primary);">Adicionar Produtos</h5>
+                        <input type="text" id="m-prod-search" class="form-control" style="max-width: 250px; padding: 6px 10px; font-size: 13px;" placeholder="🔍 Filtrar por nome ou SKU..." onkeyup="filterModalProducts()">
+                    </div>
+                    <div class="flex" style="gap: 10px; align-items: flex-end;">
+                        <div class="form-group" style="margin: 0; flex: 2;">
+                            <select id="m-prod" class="form-control">
+                                <option value="">Selecione um produto...</option>
+                                ${data.produtos.map(p => `<option value="${p.id}">[${p.sku}] ${p.nome} (Estoque: ${p.estoqueAtual})</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin: 0; flex: 1;">
+                            <label>Qtd</label>
+                            <input type="number" id="m-qty" class="form-control" min="1" value="1">
+                        </div>
+                        <button type="button" class="btn btn-outline" style="background: white;" onclick="addMovItem('${tipo}')">Adicionar</button>
+                    </div>
+                </div>
+
+                <div style="max-height: 200px; overflow-y: auto; margin-bottom: 20px; border: 1px solid var(--border-color); border-radius: 8px;">
+                    <table style="margin: 0;">
+                        <thead style="background: #f8fafc; position: sticky; top: 0;">
+                            <tr>
+                                <th>Produto</th>
+                                <th>Qtd</th>
+                                <th>Unitário</th>
+                                <th>Subtotal</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="cart-items">
+                            <tr><td colspan="5" style="text-align: center; color: #94a3b8; padding: 20px;">Nenhum produto adicionado</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="flex" style="justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); padding-top: 20px;">
+                    <h3 style="margin: 0; color: var(--text-main);">Total: R$ <span id="cart-total">0.00</span></h3>
+                    <div class="flex" style="gap: 10px;">
+                        <button type="button" class="btn btn-outline" onclick="closeModal()">Cancelar</button>
+                        <button type="button" class="btn btn-primary" onclick="saveMovimentacao('${tipo}')">Guardar Pedido</button>
+                    </div>
+                </div>
+            `;
+            
+            openModal();
+            renderCart();
+        }
+
+        function openMovModal(tipo) {
+            tempCart = []; 
+            editingOrderId = null;
+            renderMovModalForm(tipo);
+        }
+
+        function editMovModal(id, tipo) {
+            const pedido = data[tipo].find(m => m.id === id);
+            if (!pedido) return;
+            
+            editingOrderId = id;
+            if (pedido.itens) {
+                tempCart = JSON.parse(JSON.stringify(pedido.itens)); // Deep copy
+            } else {
+                // Suporte a pedidos antigos (legado de 1 item)
+                const p = data.produtos.find(x => x.id === pedido.produtoId);
+                tempCart = p ? [{ produtoId: p.id, nome: p.nome, quantidade: pedido.quantidade, preco: (tipo==='compras'?pedido.precoCusto:pedido.precoVenda) }] : [];
+            }
+            renderMovModalForm(tipo, pedido);
+        }
+
+        function baixarPedido(id, tipo) {
+            const modalBody = document.getElementById('modal-body');
+            document.getElementById('modal-title').innerText = "Confirmar Baixa do Pedido";
+
+            modalBody.innerHTML = `
+                <div style="margin-bottom: 20px; font-size: 15px;">
+                    Tem a certeza que deseja baixar o pedido <strong>${id}</strong>?<br><br>
+                    <span style="color: var(--danger); font-weight: 600;">Atenção: Após a baixa, o pedido não poderá ser alterado.</span>
+                </div>
+                <div class="flex" style="justify-content: flex-end; gap: 10px;">
+                    <button type="button" class="btn btn-outline" onclick="closeModal()">Cancelar</button>
+                    <button type="button" class="btn btn-primary" style="background: var(--success);" onclick="confirmarBaixa('${id}', '${tipo}')">Confirmar Baixa</button>
+                </div>
+            `;
+            openModal();
+        }
+
+        function confirmarBaixa(id, tipo) {
+            const pedido = data[tipo].find(m => m.id === id);
+            if(pedido) {
+                pedido.status = 'baixado';
+                pedido.dataBaixa = new Date().toISOString();
+                saveStorage();
+                closeModal();
+                filterMov(tipo);
+                showToast("Pedido baixado com sucesso!", "success");
+            }
+        }
+
+        function filterModalProducts() {
+            const term = document.getElementById('m-prod-search').value.toLowerCase();
+            const select = document.getElementById('m-prod');
+            
+            const filtered = data.produtos.filter(p => 
+                p.nome.toLowerCase().includes(term) || p.sku.toLowerCase().includes(term)
+            );
+            
+            filtered.sort((a, b) => a.nome.localeCompare(b.nome));
+
+            select.innerHTML = '<option value="">Selecione um produto...</option>' + 
+                filtered.map(p => `<option value="${p.id}">[${p.sku}] ${p.nome} (Estoque: ${p.estoqueAtual})</option>`).join('');
+        }
+
+        function addMovItem(tipo) {
+            const pid = document.getElementById('m-prod').value;
+            const qty = parseInt(document.getElementById('m-qty').value);
+            
+            if (!pid || isNaN(qty) || qty <= 0) {
+                showToast("Selecione um produto e uma quantidade válida.", "danger");
+                return;
+            }
+            
+            const p = data.produtos.find(x => x.id === pid);
+            
+            if (tipo === 'vendas') {
+                let oldQty = 0;
+                if (editingOrderId) {
+                    const oldOrder = data[tipo].find(m => m.id === editingOrderId);
+                    if (oldOrder) {
+                        const oldItens = oldOrder.itens || [{produtoId: oldOrder.produtoId, quantidade: oldOrder.quantidade}];
+                        const oldItem = oldItens.find(i => i.produtoId === pid);
+                        if (oldItem) oldQty = oldItem.quantidade;
+                    }
+                }
+                const alreadyInCart = tempCart.find(item => item.produtoId === pid)?.quantidade || 0;
+                // Valida considerando que o estoque atual vai receber de volta a oldQty antes de deduzir a nova qty
+                if ((p.estoqueAtual + oldQty) < (qty + alreadyInCart)) {
+                    showToast(`Estoque insuficiente para ${p.nome}!`, "danger");
+                    return;
+                }
+            }
+
+            const existingItem = tempCart.find(item => item.produtoId === pid);
+            if (existingItem) {
+                existingItem.quantidade += qty;
+            } else {
+                tempCart.push({
+                    produtoId: pid,
+                    nome: p.nome,
+                    quantidade: qty,
+                    preco: tipo === 'compras' ? p.precoCusto : p.precoVenda
+                });
+            }
+            
+            renderCart();
+            document.getElementById('m-prod-search').value = '';
+            filterModalProducts();
+            document.getElementById('m-prod').value = '';
+            document.getElementById('m-qty').value = '1';
+        }
+
+        function removeMovItem(index) {
+            tempCart.splice(index, 1);
+            renderCart();
+        }
+
+        function renderCart() {
+            const tbody = document.getElementById('cart-items');
+            const totalSpan = document.getElementById('cart-total');
+            
+            if (tempCart.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #94a3b8; padding: 20px;">Nenhum produto adicionado</td></tr>';
+                totalSpan.innerText = '0.00';
+                return;
+            }
+            
+            let total = 0;
+            tbody.innerHTML = tempCart.map((item, index) => {
+                const subtotal = item.quantidade * item.preco;
+                total += subtotal;
+                return `
+                    <tr>
+                        <td>${item.nome}</td>
+                        <td>${item.quantidade}</td>
+                        <td>R$ ${item.preco.toFixed(2)}</td>
+                        <td style="font-weight: 600;">R$ ${subtotal.toFixed(2)}</td>
+                        <td style="text-align: right;">
+                            <button type="button" class="btn btn-outline" style="padding: 4px 8px; font-size: 10px; border-color: transparent;" onclick="removeMovItem(${index})">❌</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            
+            totalSpan.innerText = total.toFixed(2);
+        }
+
+        function saveMovimentacao(tipo) {
+            const dataStr = document.getElementById('m-data').value;
+            const pessoa = document.getElementById('m-pessoa').value;
+            
+            if (!dataStr || !pessoa) {
+                showToast("Preencha a data e o fornecedor/cliente.", "danger");
+                return;
+            }
+            
+            if (tempCart.length === 0) {
+                showToast("Adicione pelo menos um produto ao pedido.", "danger");
+                return;
+            }
+            
+            const isCompra = tipo === 'compras';
+            
+            if (editingOrderId) {
+                const oldOrder = data[tipo].find(m => m.id === editingOrderId);
+                if (oldOrder) {
+                    // Reverter estoque do pedido antigo
+                    const oldItens = oldOrder.itens || [{produtoId: oldOrder.produtoId, quantidade: oldOrder.quantidade}];
+                    oldItens.forEach(item => {
+                        const p = data.produtos.find(x => x.id === item.produtoId);
+                        if (p) p.estoqueAtual -= (isCompra ? item.quantidade : -item.quantidade);
+                    });
+
+                    // Aplicar estoque do novo pedido
+                    tempCart.forEach(item => {
+                        const p = data.produtos.find(x => x.id === item.produtoId);
+                        if (p) p.estoqueAtual += (isCompra ? item.quantidade : -item.quantidade);
+                    });
+
+                    // Atualizar objeto do pedido
+                    oldOrder.data = dataStr;
+                    if (isCompra) oldOrder.fornecedor = pessoa;
+                    else oldOrder.cliente = pessoa;
+                    oldOrder.itens = tempCart.slice();
+                    
+                    // Limpar propriedades de legado (se existirem)
+                    delete oldOrder.produtoId;
+                    delete oldOrder.quantidade;
+                    delete oldOrder.precoCusto;
+                    delete oldOrder.precoVenda;
+                }
+            } else {
+                // Criar Novo Pedido
+                const movObj = {
+                    id: (isCompra ? 'PC-' : 'PV-') + String(data[tipo].length + 1).padStart(5, '0'),
+                    data: dataStr,
+                    itens: tempCart.slice(),
+                    status: 'pendente'
+                };
+                
+                if (isCompra) movObj.fornecedor = pessoa;
+                else movObj.cliente = pessoa;
+                
+                // Aplicar estoque
+                tempCart.forEach(item => {
+                    const p = data.produtos.find(x => x.id === item.produtoId);
+                    if (p) {
+                        p.estoqueAtual += (isCompra ? item.quantidade : -item.quantidade);
+                    }
+                });
+                
+                data[tipo].push(movObj);
+            }
+            
+            editingOrderId = null; // reset
+            saveStorage();
+            closeModal();
+            showToast("Pedido guardado com sucesso!", "success");
+            renderMovimentacao(document.getElementById('module-container'), document.getElementById('current-module-title'), tipo);
+        }
+
+        function viewPedidoDetails(id, tipo) {
+            const pedido = data[tipo].find(m => m.id === id);
+            if (!pedido) return;
+
+            const isCompra = tipo === 'compras';
+            const modalBody = document.getElementById('modal-body');
+            document.getElementById('modal-title').innerText = `Detalhes do Pedido: ${pedido.id}`;
+
+            let totalPedido = 0;
+            let itensHtml = '';
+
+            if (pedido.itens) {
+                itensHtml = pedido.itens.map(item => {
+                    const subtotal = item.quantidade * item.preco;
+                    totalPedido += subtotal;
+                    return `
+                        <tr>
+                            <td>${item.nome}</td>
+                            <td>${item.quantidade}</td>
+                            <td>R$ ${item.preco.toFixed(2)}</td>
+                            <td style="font-weight: 600;">R$ ${subtotal.toFixed(2)}</td>
+                        </tr>
+                    `;
+                }).join('');
+            } else {
+                // Suporte para pedidos antigos (1 item)
+                const p = data.produtos.find(prod => prod.id === pedido.produtoId);
+                const preco = isCompra ? pedido.precoCusto : pedido.precoVenda;
+                const subtotal = pedido.quantidade * preco;
+                totalPedido = subtotal;
+                itensHtml = `
+                    <tr>
+                        <td>${p ? p.nome : 'Produto Excluído'}</td>
+                        <td>${pedido.quantidade}</td>
+                        <td>R$ ${preco.toFixed(2)}</td>
+                        <td style="font-weight: 600;">R$ ${subtotal.toFixed(2)}</td>
+                    </tr>
+                `;
+            }
+
+            const status = pedido.status || 'pendente';
+            const statusBadge = status === 'baixado' 
+                ? `<span class="badge badge-success">Baixado em ${new Date(pedido.dataBaixa).toLocaleDateString()}</span>` 
+                : `<span class="badge badge-warning">Pendente</span>`;
+
+            modalBody.innerHTML = `
+                <div class="grid" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 20px; background: rgba(0,0,0,0.02); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);">
+                    <div>
+                        <p style="font-size: 12px; color: #64748b; margin-bottom: 2px;">Data do Pedido</p>
+                        <p style="font-weight: 600; font-size: 14px;">${pedido.data}</p>
+                    </div>
+                    <div>
+                        <p style="font-size: 12px; color: #64748b; margin-bottom: 2px;">${isCompra ? 'Fornecedor' : 'Cliente'}</p>
+                        <p style="font-weight: 600; font-size: 14px;">${pedido.fornecedor || pedido.cliente}</p>
+                    </div>
+                    <div>
+                        <p style="font-size: 12px; color: #64748b; margin-bottom: 2px;">Status</p>
+                        <p style="font-weight: 600; font-size: 14px;">${statusBadge}</p>
+                    </div>
+                </div>
+
+                <h5 style="margin-bottom: 10px; color: var(--primary);">Itens do Pedido</h5>
+                <div style="max-height: 250px; overflow-y: auto; margin-bottom: 20px; border: 1px solid var(--border-color); border-radius: 8px;">
+                    <table style="margin: 0;">
+                        <thead style="background: #f8fafc; position: sticky; top: 0;">
+                            <tr>
+                                <th>Produto</th>
+                                <th>Qtd</th>
+                                <th>Unitário</th>
+                                <th>Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${itensHtml}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="flex" style="justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); padding-top: 15px;">
+                    <button type="button" class="btn btn-outline" onclick="closeModal()">Fechar</button>
+                    <h3 style="margin: 0; color: var(--text-main);">Total: R$ ${totalPedido.toFixed(2)}</h3>
+                </div>
+            `;
+
+            openModal();
+        }
+
+        /***********************************************************
+         * MÓDULO: CONFIGURAÇÕES E USUÁRIOS
+         ***********************************************************/
+        function renderConfig(container, title) {
+            title.innerText = "Configurações do Sistema";
+            const isAdmin = currentUser.perfil === 'admin';
+
+            container.innerHTML = `
+                <div class="tabs">
+                    <div class="tab active" onclick="switchSubTab(this, 'tab-visual')">Personalização Visual</div>
+                    ${isAdmin ? `<div class="tab" onclick="switchSubTab(this, 'tab-usuarios')">Gerir Utilizadores</div>` : ''}
+                </div>
+
+                <div id="tab-visual" class="tab-content">
+                    <div class="grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div class="card">
+                            <h4>Temas</h4>
+                            <div class="flex" style="gap: 10px; flex-wrap: wrap; margin-top:15px;">
+                                <button class="btn btn-outline" onclick="changeTheme('light')">☀️ Claro</button>
+                                <button class="btn btn-outline" onclick="changeTheme('dark')">🌙 Escuro</button>
+                                <button class="btn btn-outline" onclick="changeTheme('corporate')">🔵 Azul</button>
+                                <button class="btn btn-outline" onclick="changeTheme('green')">🟢 Verde</button>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <h4>Identidade Visual</h4>
+                            <div class="form-group">
+                                <label>Logotipo (PNG/JPG)</label>
+                                <input type="file" id="cfg-logo" class="form-control" accept="image/*" onchange="uploadFile('logo')">
+                            </div>
+                            <div class="form-group">
+                                <label>Wallpaper Login</label>
+                                <input type="file" id="cfg-bg" class="form-control" accept="image/*" onchange="uploadFile('bgLogin')">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-usuarios" class="tab-content hidden">
+                    <div class="card flex" style="justify-content: space-between;">
+                        <h4>Lista de Utilizadores</h4>
+                        <button class="btn btn-primary" onclick="openUserModal()">+ Adicionar Utilizador</button>
+                    </div>
+                    <div class="card">
+                        <table>
+                            <thead>
+                                <tr><th>Nome</th><th>Login</th><th>Perfil</th><th>Ações</th></tr>
+                            </thead>
+                            <tbody>
+                                ${data.usuarios.map(u => `
+                                    <tr>
+                                        <td>${u.nome}</td>
+                                        <td><code>${u.login}</code></td>
+                                        <td>${u.perfil}</td>
+                                        <td>
+                                            ${u.id !== 'admin-0' ? `<button class="btn btn-danger" onclick="deleteUser('${u.id}')">Excluir</button>` : '<em>(Master)</em>'}
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+
+        function uploadFile(target) {
+            const inputId = target === 'logo' ? 'cfg-logo' : 'cfg-bg';
+            const file = document.getElementById(inputId).files[0];
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                data.config[target] = reader.result;
+                saveStorage();
+                showToast("Imagem atualizada! Recarregue para aplicar.", "success");
+            };
+            if (file) reader.readAsDataURL(file);
+        }
+
+        function changeTheme(theme) {
+            data.config.tema = theme;
+            saveStorage();
+            applyTheme();
+            showToast("Tema aplicado!", "success");
+        }
+
+        function applyTheme() {
+            const theme = data.config.tema || 'corporate';
+            document.body.setAttribute('data-theme', theme);
+        }
+
+        function openUserModal() {
+            const modalBody = document.getElementById('modal-body');
+            document.getElementById('modal-title').innerText = "Novo Utilizador";
+
+            modalBody.innerHTML = `
+                <form id="form-user">
+                    <div class="form-group">
+                        <label>Nome Completo</label>
+                        <input type="text" id="u-nome" class="form-control" required>
+                    </div>
+                    <div class="grid" style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
+                        <div class="form-group">
+                            <label>Login</label>
+                            <input type="text" id="u-login" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Senha</label>
+                            <input type="password" id="u-pass" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Perfil</label>
+                        <select id="u-perfil" class="form-control" onchange="togglePerms(this.value)">
+                            <option value="usuario">Utilizador Comum</option>
+                            <option value="admin">Administrador</option>
+                        </select>
+                    </div>
+                    <div id="perms-box" style="padding: 15px; border: 1px solid var(--border-color); border-radius: 8px;">
+                        <h5 style="margin-bottom:10px">Permissões de Acesso</h5>
+                        <div class="grid" style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                            <label><input type="checkbox" id="perm-produtos" checked> Módulo Produtos</label>
+                            <label><input type="checkbox" id="perm-produtos_edit"> Registar/Editar Prod.</label>
+                            <label><input type="checkbox" id="perm-estoque" checked> Módulo Estoque</label>
+                            <label><input type="checkbox" id="perm-compras" checked> Módulo Compras</label>
+                            <label><input type="checkbox" id="perm-vendas" checked> Módulo Vendas</label>
+                            <label><input type="checkbox" id="perm-dashboard" checked> Dashboard</label>
+                        </div>
+                    </div>
+                    <div class="flex" style="justify-content: flex-end; gap:10px; margin-top:20px;">
+                        <button type="button" class="btn btn-outline" onclick="closeModal()">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Guardar Utilizador</button>
+                    </div>
+                </form>
+            `;
+
+            document.getElementById('form-user').onsubmit = (e) => {
+                e.preventDefault();
+                const newUser = {
+                    id: 'user-' + Date.now(),
+                    nome: document.getElementById('u-nome').value,
+                    login: document.getElementById('u-login').value,
+                    pass: document.getElementById('u-pass').value,
+                    perfil: document.getElementById('u-perfil').value,
+                    permissoes: {
+                        produtos: document.getElementById('perm-produtos').checked,
+                        produtos_edit: document.getElementById('perm-produtos_edit').checked,
+                        estoque: document.getElementById('perm-estoque').checked,
+                        compras: document.getElementById('perm-compras').checked,
+                        vendas: document.getElementById('perm-vendas').checked,
+                        dashboard: document.getElementById('perm-dashboard').checked
+                    }
+                };
+                data.usuarios.push(newUser);
+                saveStorage();
+                closeModal();
+                showToast("Utilizador criado!", "success");
+                renderConfig(document.getElementById('module-container'), document.getElementById('current-module-title'));
+            };
+            openModal();
+        }
+
+        function deleteUser(id) {
+            const modalBody = document.getElementById('modal-body');
+            document.getElementById('modal-title').innerText = "Confirmar Exclusão";
+
+            modalBody.innerHTML = `
+                <div style="margin-bottom: 20px; font-size: 15px;">
+                    Tem a certeza que deseja excluir este utilizador do sistema?
+                </div>
+                <div class="flex" style="justify-content: flex-end; gap: 10px;">
+                    <button type="button" class="btn btn-outline" onclick="closeModal()">Cancelar</button>
+                    <button type="button" class="btn btn-danger" onclick="confirmarDeleteUser('${id}')">Excluir Utilizador</button>
+                </div>
+            `;
+            openModal();
+        }
+
+        function confirmarDeleteUser(id) {
+            data.usuarios = data.usuarios.filter(u => u.id !== id);
+            saveStorage();
+            closeModal();
+            renderConfig(document.getElementById('module-container'), document.getElementById('current-module-title'));
+            showToast("Utilizador excluído.", "success");
+        }
+
+        /***********************************************************
+         * UTILITÁRIOS UI
+         ***********************************************************/
+        function openModal() { document.getElementById('modal').style.display = 'flex'; }
+        function closeModal() { document.getElementById('modal').style.display = 'none'; }
+        
+        function showToast(msg, type = 'info') {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.style.background = type === 'success' ? 'var(--success)' : (type === 'danger' ? 'var(--danger)' : (type === 'info' ? '#8b5cf6' : '#334155'));
+            t.style.transform = 'translateY(0)';
+            setTimeout(() => { t.style.transform = 'translateY(100px)'; }, 3000);
+        }
+
+        function switchSubTab(el, tabId) {
+            const tabs = el.parentElement.querySelectorAll('.tab');
+            tabs.forEach(t => t.classList.remove('active'));
+            el.classList.add('active');
+            
+            const contents = el.parentElement.parentElement.querySelectorAll('.tab-content');
+            contents.forEach(c => c.classList.add('hidden'));
+            document.getElementById(tabId).classList.remove('hidden');
+        }
+
+        function togglePerms(perfil) {
+            document.getElementById('perms-box').style.opacity = (perfil === 'admin' ? '0.3' : '1');
+            document.getElementById('perms-box').style.pointerEvents = (perfil === 'admin' ? 'none' : 'auto');
+        }
     </script>
 </body>
 </html>
